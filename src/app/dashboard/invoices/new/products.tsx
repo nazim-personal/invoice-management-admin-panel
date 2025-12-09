@@ -102,17 +102,20 @@ export default function ProductsInvoice({ items, setItems }: IPropsTypes) {
         (p) => !items.some((item) => item.id === p.id)
     );
 
-    const handleQuantityChange = (productId: number, quantity: number) => {
+    const handleQuantityChange = (productId: string, quantity: number | "") => {
         setItems(
             items.map((item) =>
                 item.id === productId
-                    ? { ...item, ordered_quantity: isNaN(quantity) || quantity < 0 ? 0 : quantity }
+                    ? {
+                        ...item,
+                        quantity: quantity === "" ? 0 : (isNaN(Number(quantity)) || Number(quantity) < 0 ? 0 : Number(quantity))
+                    }
                     : item
             )
         );
     };
 
-    const handleRemoveItem = (productId: number) => {
+    const handleRemoveItem = (productId: string) => {
         setItems(items.filter((item) => item.id !== productId));
     };
 
@@ -120,6 +123,10 @@ export default function ProductsInvoice({ items, setItems }: IPropsTypes) {
         if (products.length < meta.total) {
             setCurrentPage(currentPage + 1);
         }
+    };
+
+    const hasError = (item: InvoiceItem) => {
+        return item.quantity > item.product.stock || item.quantity < 1;
     };
 
     return (
@@ -154,33 +161,48 @@ export default function ProductsInvoice({ items, setItems }: IPropsTypes) {
                                 <TableCell>
                                     <Input
                                         type="number"
-                                        min={0}
+                                        min="1"
                                         value={item.quantity === 0 ? "" : item.quantity}
                                         onChange={(e) => {
                                             const val = e.target.value;
 
                                             if (val === "") {
-                                                handleQuantityChange(item.id, 0);
+                                                handleQuantityChange(item.id, "");
                                                 return;
                                             }
 
                                             const parsed = parseInt(val, 10);
-
                                             if (!isNaN(parsed)) {
                                                 handleQuantityChange(item.id, parsed);
                                             }
                                         }}
                                         onBlur={(e) => {
-                                            const parsed = parseInt(e.target.value, 10);
-                                            if (isNaN(parsed) || parsed < 0) {
+                                            const val = e.target.value;
+                                            if (val === "") {
+                                                // Keep it as 0 (empty) to show error
                                                 handleQuantityChange(item.id, 0);
+                                            } else {
+                                                const parsed = parseInt(val, 10);
+                                                if (isNaN(parsed) || parsed < 1) {
+                                                    handleQuantityChange(item.id, 0);
+                                                }
                                             }
                                         }}
-                                        className={`w-20 ${item.quantity > item.product.stock || item.quantity <= 0 ? "border-red-500 border-2" : ""}`}
+                                        className={`w-20 ${hasError(item) ? "border-red-500 border-2" : ""}`}
                                     />
                                     {item.quantity > item.product.stock && (
                                         <p className="text-xs text-red-500">
                                             Out of stock
+                                        </p>
+                                    )}
+                                    {item.quantity < 1 && item.quantity !== 0 && (
+                                        <p className="text-xs text-red-500">
+                                            Minimum quantity is 1
+                                        </p>
+                                    )}
+                                    {item.quantity === 0 && (
+                                        <p className="text-xs text-red-500">
+                                            Quantity cannot be empty
                                         </p>
                                     )}
                                 </TableCell>
@@ -194,7 +216,7 @@ export default function ProductsInvoice({ items, setItems }: IPropsTypes) {
                                 <TableCell className="text-right">
                                     <span className="inline-flex items-center gap-0.5">
                                         <IndianRupee className="h-3 w-3" />
-                                        {formatWithThousands(item.price * item.quantity)}
+                                        {formatWithThousands(item.price * (item.quantity < 1 ? 0 : item.quantity))}
                                     </span>
                                 </TableCell>
                                 <TableCell className="text-right">
@@ -223,13 +245,13 @@ export default function ProductsInvoice({ items, setItems }: IPropsTypes) {
                         value={productIdToAdd}
                         onValueChange={(value) => {
                             setProductIdToAdd(value);
-                            const productToAdd = products.find((p) => p.id === Number(value));
+                            const productToAdd = products.find((p) => p.id === value);
                             if (productToAdd) {
                                 setItems((prev) => [
                                     ...prev,
                                     {
                                         id: productToAdd.id,
-                                        invoice_id: 0, // Set appropriately if available
+                                        invoice_id: "",
                                         product_id: productToAdd.id,
                                         quantity: 1,
                                         price: productToAdd.price,

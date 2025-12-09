@@ -9,7 +9,7 @@ export interface UserDataTypes {
     phone?: string | undefined
     email: string;
     name: string;
-    id: number;
+    id: string;
     role?: "user" | "admin";
     username?: string;
 }

@@ -2,13 +2,13 @@ import { ApiResponse } from "./api";
 import { InvoiceDataTypes } from "./invoices";
 
 export interface CustomerDataTypes {
-    id: number;
+    id: string;
     name: string;
     email: string;
     phone: string;
     address: string;
     gst_number?: string | null;
-    created_at: string; 
+    created_at: string;
     updated_at?: string | null;
     deleted_at?: string | null;
     status?: string | null
@@ -25,6 +25,6 @@ export interface CustomerDetailsType extends CustomerDataTypes {
 
 export interface DeletedResponse {
     deleted_count: number
-} 
+}
 export type CustomerApiResponseTypes<T = CustomerDataTypes | CustomerDataTypes[] | DeletedResponse> = ApiResponse<T>;
 export type CustomerDetailsApiResponseType = ApiResponse<CustomerDetailsType>;

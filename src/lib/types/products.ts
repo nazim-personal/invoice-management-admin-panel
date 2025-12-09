@@ -2,7 +2,7 @@ import { ApiResponse } from "./api";
 import { DeletedResponse } from "./customers";
 
 export interface ProductDataTypes {
-  id: number;
+  id: string;
   name: string;
   description: string;
   product_code: string;

@@ -3,7 +3,7 @@ import { CustomerDataTypes } from "./customers";
 import { ProductDataTypes } from "./products";
 
 export interface InvoiceDataTypes {
-  id: number;
+  id: string;
   invoice_number: string;
   created_at: string;
   due_date: string;
@@ -17,7 +17,7 @@ export interface InvoiceDataTypes {
   due_amount: number;
   updated_at: string | null;
   customer: {
-    id: number;
+    id: string;
     name: string;
     phone: string | null;
   }
@@ -30,9 +30,9 @@ export interface InvoiceAggregates {
   invoices: InvoiceDataTypes[];
 }
 export interface InvoiceItem {
-  id: number;
-  invoice_id: number;
-  product_id: number;
+  id: string;
+  invoice_id: string;
+  product_id: string;
   quantity: number;
   price: number;
   total: number;
@@ -45,8 +45,8 @@ export interface InvoiceDetailsType extends InvoiceDataTypes {
 }
 
 export interface Payment {
-  id: number;
-  invoice_id: number;
+  id: string;
+  invoice_id: string;
   amount: number;
   payment_date: string | null; // ISO datetime or null
   method: string; // e.g. "cash", "bank", "upi"
@@ -59,15 +59,39 @@ export interface DeletedResponse {
 export type InvoiceApiResponseTypes<T = InvoiceDataTypes | InvoiceDataTypes[] | DeletedResponse> = ApiResponse<T>;
 export type InvoiceDetailsApiResponseType = ApiResponse<InvoiceDetailsType>;
 
+// export interface GenerateInvoicePDFProps {
+//   invoiceNumber: string;
+//   customer: CustomerDataTypes;
+//   items: InvoiceItem[];
+//   subtotal: number;
+//   tax: number;
+//   taxAmount: number;
+//   discount: number;
+//   total: number;
+//   amountPaid: number;
+//   amountDue: number;
+// }
 export interface GenerateInvoicePDFProps {
   invoiceNumber: string;
-  customer: CustomerDataTypes;
-  items: InvoiceItem[];
-  subtotal: number;
-  tax: number;
-  taxAmount: number;
-  discount: number;
-  total: number;
-  amountPaid: number;
-  amountDue: number;
+  date: Date | string;
+  dueDate: Date | string;
+  customer: {
+    name: string;
+    address?: string;
+    email?: string;
+    phone?: string;
+  };
+  items: Array<{
+    product: {
+      name: string;
+      product_code?: string;
+    };
+    quantity: number;
+    price: number;
+  }>;
+  subtotal?: number;
+  discount?: number;
+  amountPaid?: number;
+  status: "paid" | "pending" | "overdue";
+  notes?: string;
 }

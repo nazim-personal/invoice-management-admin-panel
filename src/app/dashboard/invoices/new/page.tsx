@@ -45,9 +45,10 @@ export default function NewInvoicePage() {
   const [amountPaid, setAmountPaid] = React.useState(0);
   const [isLoading, setIsLoading] = React.useState(false);
   const [dueDate, setDueDate] = useState(new Date().toISOString().split("T")[0]);
+  console.log('items: ', items);
 
   const subtotal = items.reduce(
-    (acc, item) => acc + item.price * item.ordered_quantity,
+    (acc, item) => acc + item.price * item.quantity,
     0
   );
   const taxAmount = (subtotal * tax) / 100;
@@ -75,18 +76,18 @@ export default function NewInvoicePage() {
       }
 
       for (const item of items) {
-        if (item.ordered_quantity <= 0) {
+        if (item.quantity <= 0) {
           toast({
             title: "Invalid Quantity",
-            description: `Quantity for "${item.name}" cannot be empty or zero.`,
+            description: `Quantity for "${item.product.name}" cannot be empty or zero.`,
             variant: "destructive",
           });
           return;
         }
-        if (item.ordered_quantity > item.stock) {
+        if (item.quantity > item.product.stock) {
           toast({
             title: "Out of Stock",
-            description: `Quantity for "${item.name}" exceeds available stock (${item.stock}).`,
+            description: `Quantity for "${item.product.name}" exceeds available stock (${item.product.stock}).`,
             variant: "destructive",
           });
           return;
@@ -101,7 +102,7 @@ export default function NewInvoicePage() {
         discount_amount: discount,
         items: items.map((item) => ({
           product_id: item.id,
-          quantity: item.ordered_quantity,
+          quantity: item.quantity,
         })),
       };
 
@@ -173,18 +174,18 @@ export default function NewInvoicePage() {
     }
 
     for (const item of items) {
-      if (item.ordered_quantity <= 0) {
+      if (item.quantity <= 0) {
         toast({
           title: "Invalid Quantity",
-          description: `Quantity for "${item.name}" cannot be empty or zero.`,
+          description: `Quantity for "${item.product.name}" cannot be empty or zero.`,
           variant: "destructive",
         });
         return;
       }
-      if (item.ordered_quantity > item.stock) {
+      if (item.quantity > item.product.stock) {
         toast({
           title: "Out of Stock",
-          description: `Quantity for "${item.name}" exceeds available stock (${item.stock}).`,
+          description: `Quantity for "${item.product.name}" exceeds available stock (${item.product.stock}).`,
           variant: "destructive",
         });
         return;
@@ -195,15 +196,20 @@ export default function NewInvoicePage() {
     if (response?.success) {
       await generateInvoicePDF({
         invoiceNumber: 'IBV', // dynamic
+        date: new Date().toISOString().split("T")[0],
+        dueDate: dueDate,
         customer: selectedCustomer as CustomerDataTypes,
         items,
+        // total,
+        // amountDue,
         subtotal,
-        tax,
-        taxAmount,
+        // tax,
         discount,
-        total,
-        amountPaid,
-        amountDue
+        status: "paid",
+        // shipping: 123,
+        notes: "Thank you for your business!"
+        // taxAmount,
+        // amountPaid
       });
     }
   };

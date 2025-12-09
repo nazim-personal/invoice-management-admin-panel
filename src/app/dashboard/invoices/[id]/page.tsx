@@ -124,19 +124,35 @@ export default function ViewInvoicePage() {
   };
 
   const handleGeneratePdf = async () => {
-    await generateInvoicePDF({
-      invoiceNumber: 'IBV', // dynamic
-      customer,
-      items,
-      subtotal: invoice.subtotal_amount,
-      tax: invoice.tax_percent,
-      taxAmount: invoice.tax_amount,
-      discount: invoice.discount_amount,
-      total: invoice.total_amount,
-      amountPaid: invoice.paid_amount,
-      amountDue: invoice.due_amount
-    });
-
+    // await generateInvoicePDF({
+    //   invoiceNumber: 'IBV', // dynamic
+    //   customer,
+    //   items,
+    //   subtotal: invoice.subtotal_amount,
+    //   tax: invoice.tax_percent,
+    //   taxAmount: invoice.tax_amount,
+    //   discount: invoice.discount_amount,
+    //   total: invoice.total_amount,
+    //   amountPaid: invoice.paid_amount,
+    //   amountDue: invoice.due_amount
+    // });
+ await generateInvoicePDF({
+        invoiceNumber: 'IBV', // dynamic
+        date: new Date().toISOString().split("T")[0],
+        dueDate: new Date().toISOString().split("T")[0],
+        customer,
+        items,
+        // total: invoice.total_amount,
+        // amountDue: invoice.due_amount,
+        subtotal: invoice.subtotal_amount,
+        // tax: invoice.tax_percent,
+        discount: invoice.discount_amount,
+        status: "paid",
+        // shipping: 123,
+        notes: "Thank you for your business!"
+        // taxAmount,
+        // amountPaid
+      });
     // doc.save(`invoice-${invoice_number}.pdf`);
   };
 
