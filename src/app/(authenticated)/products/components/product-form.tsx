@@ -101,16 +101,14 @@ export function ProductForm({
 
       const savedProduct: ProductsApiResponseTypes<ProductDataTypes> = product
         ? await putRequest({
-            url: `/api/products/${product.id}`,
-            body: newOrUpdatedProduct,
-          })
+          url: `/api/products/${product.id}`,
+          body: newOrUpdatedProduct,
+        })
         : await postRequest({ url: "/api/products", body: newOrUpdatedProduct });
 
       toast({
-        title: savedProduct.message,
-        description: `${savedProduct.data.results.name} has been ${
-          product ? "updated" : "created"
-        }.`,
+        title: "Success",
+        description: savedProduct.message,
         variant: "success",
       });
 
@@ -209,9 +207,8 @@ export function ProductForm({
                   type="text"
                   value={
                     stockChange > 0
-                      ? `${currentStock} ${
-                          stockAction === "increase" ? "+" : "-"
-                        } ${stockChange} = ${calculatedStock}`
+                      ? `${currentStock} ${stockAction === "increase" ? "+" : "-"
+                      } ${stockChange} = ${calculatedStock}`
                       : currentStock
                   }
                   disabled

@@ -181,7 +181,7 @@ export default function ViewCustomerPage() {
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
       <div className="flex items-center gap-4">
-        <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => router.push('/dashboard/customers')}>
+        <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => router.push('/customers')}>
           <ChevronLeft className="h-4 w-4" />
           <span className="sr-only">Back</span>
         </Button>
@@ -301,7 +301,7 @@ export default function ViewCustomerPage() {
                 <CardDescription>A list of all invoices for {capitalizeWords(customer.name)}.</CardDescription>
               </div>
               <Button asChild size="sm">
-                <Link href={`/dashboard/invoices/new?customerId=${customer.id}&from=/dashboard/customers/${customer.id}`}>
+                <Link href={`/invoices/new?customerId=${customer.id}&from=/customers/${customer.id}`}>
                   <PlusCircle className="mr-2 h-4 w-4" />
                   Add Invoice
                 </Link>
@@ -322,13 +322,13 @@ export default function ViewCustomerPage() {
               <TableBody>
                 {customer.aggregates.invoices.map((invoice) => (
                   <TableRow key={invoice.invoice_number}>
-                    <TableCell className="font-medium cursor-pointer" onClick={() => router.push(`/dashboard/invoices/${invoice.id}?from=/dashboard/customers/${params.id}`)}>
+                    <TableCell className="font-medium cursor-pointer" onClick={() => router.push(`/invoices/${invoice.id}?from=/customers/${params.id}`)}>
                       {invoice.invoice_number}
                     </TableCell>
-                    <TableCell className="cursor-pointer" onClick={() => router.push(`/dashboard/invoices/${invoice.id}?from=/dashboard/customers/${params.id}`)}>
+                    <TableCell className="cursor-pointer" onClick={() => router.push(`/invoices/${invoice.id}?from=/customers/${params.id}`)}>
                       {formatDate(invoice.due_date)}
                     </TableCell>
-                    <TableCell className="cursor-pointer" onClick={() => router.push(`/dashboard/invoices/${invoice.id}?from=/dashboard/customers/${params.id}`)}>
+                    <TableCell className="cursor-pointer" onClick={() => router.push(`/invoices/${invoice.id}?from=/customers/${params.id}`)}>
                       <Badge
                         variant={
                           invoice.status === "Paid"
@@ -342,7 +342,7 @@ export default function ViewCustomerPage() {
                         {invoice.status}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right cursor-pointer" onClick={() => router.push(`/dashboard/invoices/${invoice.id}?from=/dashboard/customers/${params.id}`)}>
+                    <TableCell className="text-right cursor-pointer" onClick={() => router.push(`/invoices/${invoice.id}?from=/customers/${params.id}`)}>
                       <div>
                         <span className="inline-flex items-center gap-0.5">
                           <IndianRupee className="h-3 w-3" />
@@ -368,11 +368,11 @@ export default function ViewCustomerPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem onSelect={() => router.push(`/dashboard/invoices/${invoice.id}?from=/dashboard/customers/${params.id}`)}>
+                          <DropdownMenuItem onSelect={() => router.push(`/invoices/${invoice.id}?from=/customers/${params.id}`)}>
                             <Eye className="mr-2 h-4 w-4" />
                             View
                           </DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => router.push(`/dashboard/invoices/${invoice.id}/edit?from=/dashboard/customers/${params.id}`)}>
+                          <DropdownMenuItem onSelect={() => router.push(`/invoices/${invoice.id}/edit?from=/customers/${params.id}`)}>
                             <Pencil className="mr-2 h-4 w-4" />
                             Edit
                           </DropdownMenuItem>

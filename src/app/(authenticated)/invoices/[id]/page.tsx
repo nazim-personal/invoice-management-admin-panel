@@ -136,29 +136,29 @@ export default function ViewInvoicePage() {
     //   amountPaid: invoice.paid_amount,
     //   amountDue: invoice.due_amount
     // });
- await generateInvoicePDF({
-        invoiceNumber: 'IBV', // dynamic
-        date: new Date().toISOString().split("T")[0],
-        dueDate: new Date().toISOString().split("T")[0],
-        customer,
-        items,
-        // total: invoice.total_amount,
-        // amountDue: invoice.due_amount,
-        subtotal: invoice.subtotal_amount,
-        // tax: invoice.tax_percent,
-        discount: invoice.discount_amount,
-        status: "paid",
-        // shipping: 123,
-        notes: "Thank you for your business!"
-        // taxAmount,
-        // amountPaid
-      });
+    await generateInvoicePDF({
+      invoiceNumber: 'IBV', // dynamic
+      date: new Date().toISOString().split("T")[0],
+      dueDate: new Date().toISOString().split("T")[0],
+      customer,
+      items,
+      // total: invoice.total_amount,
+      // amountDue: invoice.due_amount,
+      subtotal: invoice.subtotal_amount,
+      // tax: invoice.tax_percent,
+      discount: invoice.discount_amount,
+      status: "paid",
+      // shipping: 123,
+      notes: "Thank you for your business!"
+      // taxAmount,
+      // amountPaid
+    });
     // doc.save(`invoice-${invoice_number}.pdf`);
   };
 
   const handleEdit = () => {
     const from = searchParams.get('from');
-    let editUrl = `/dashboard/invoices/${invoice?.id}/edit`;
+    let editUrl = `/invoices/${invoice?.id}/edit`;
     if (from) {
       editUrl += `?from=${encodeURIComponent(from)}`;
     }

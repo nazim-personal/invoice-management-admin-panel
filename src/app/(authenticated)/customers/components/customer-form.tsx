@@ -69,16 +69,15 @@ export function CustomerForm({ customer, onSave }: IPropsTypes) {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-    setLoading(true)
-    const cleaned = cleanValues(values);
-    const newOrUpdatedCustomer: Partial<CustomerFormType> = { ...cleaned };
+      setLoading(true)
+      const cleaned = cleanValues(values);
+      const newOrUpdatedCustomer: Partial<CustomerFormType> = { ...cleaned };
       const savedCustomer: CustomerApiResponseTypes<CustomerDataTypes> = customer
         ? await putRequest({ url: `/api/customers/${customer.id}`, body: newOrUpdatedCustomer })
         : await postRequest({ url: "/api/customers", body: newOrUpdatedCustomer });
       toast({
-        title: savedCustomer.message,
-        description: `${savedCustomer.data.results.name} has been ${customer ? "updated" : "created"
-          }.`,
+        title: "Success",
+        description: savedCustomer.message,
         variant: "success"
       });
 

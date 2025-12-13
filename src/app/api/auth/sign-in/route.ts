@@ -9,13 +9,13 @@ export async function POST(req: Request) {
     try {
         const body = await req.json();
         const response = await API.post<SignInApiResponseTypes>(API_AUTH_SIGN_IN, body);
-        const apiResponse = response.data;        
+        const apiResponse = response.data;
         const res = NextResponse.json({
-            success: apiResponse.success,
-            message: apiResponse.message,
-            user_info: apiResponse.data.results.user_info,
+            success: apiResponse?.success,
+            message: apiResponse?.message,
+            user_info: apiResponse?.data?.results?.user_info,
         });
-        const encrypted_access_token = encryptToken(apiResponse.data.results.access_token);
+        const encrypted_access_token = encryptToken(apiResponse?.data?.results?.access_token || "");
         res.cookies.set({
             name: "access_token",
             value: encrypted_access_token,
@@ -25,6 +25,32 @@ export async function POST(req: Request) {
             path: "/",
             maxAge: 60 * 60 * 24 * 7, // 7 days
         });
+
+        // Set user_details cookie (readable by client)
+        // Only store non-sensitive display info
+        const userInfo = apiResponse?.data?.results?.user_info;
+
+        if (userInfo) {
+            const userDetails = {
+                name: userInfo.name,
+                email: userInfo.email,
+                role: userInfo.role,
+                username: userInfo.username,
+                permissions: userInfo.permissions
+            };
+
+            res.cookies.set({
+                name: "user_details",
+                value: JSON.stringify(userDetails),
+                httpOnly: false, // Allow client to read
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "lax",
+                path: "/",
+                maxAge: 60 * 60 * 24 * 7, // 7 days
+            });
+        } else {
+            console.warn("User info missing in sign-in response, skipping user_details cookie");
+        }
 
         return res;
     } catch (err: any) {

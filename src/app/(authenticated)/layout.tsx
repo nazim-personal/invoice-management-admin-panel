@@ -13,13 +13,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const navItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { href: "/dashboard/customers", icon: Users, label: "Customers" },
-  { href: "/dashboard/products", icon: Package, label: "Products" },
-  { href: "/dashboard/invoices", icon: FileText, label: "Invoices" },
-  { href: "/dashboard/payments", icon: CircleDollarSign, label: "Payments" },
-  { href: "/dashboard/reports", icon: BarChart, label: "Reports" },
-  { href: "/dashboard/users", icon: Users, label: "Users" },
-  { href: "/dashboard/activity", icon: History, label: "Activity" },
+  { href: "/customers", icon: Users, label: "Customers" },
+  { href: "/products", icon: Package, label: "Products" },
+  { href: "/invoices", icon: FileText, label: "Invoices" },
+  { href: "/payments", icon: CircleDollarSign, label: "Payments" },
+  { href: "/reports", icon: BarChart, label: "Reports" },
+  { href: "/users", icon: Users, label: "Users" },
+  { href: "/activity", icon: History, label: "Activity" },
 ];
 
 function CustomSidebarTrigger() {
@@ -95,7 +95,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton asChild tooltip={{ children: "Settings" }}>
-                <Link href="/dashboard/settings">
+                <Link href="/settings">
                   <Settings />
                   <span>Settings</span>
                 </Link>

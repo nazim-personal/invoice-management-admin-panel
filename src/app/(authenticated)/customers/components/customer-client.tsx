@@ -146,8 +146,8 @@ export function CustomerClient() {
         body: { ids: [customerId] },
       });
       toast({
-        title: deleteCustomers.message,
-        description: `${deleteCustomers.data.results.deleted_count} customer deleted.`,
+        title: "Success",
+        description: deleteCustomers.message,
         variant: "success",
       });
       setCustomers(customers.filter((customer) => customer.id !== customerId));
@@ -176,8 +176,8 @@ export function CustomerClient() {
       });
       const deleted_count = deleteCustomers.data.results.deleted_count;
       toast({
-        title: deleteCustomers.message,
-        description: `${deleted_count} customer${deleted_count > 1 ? "s" : ""} deleted.`,
+        title: "Success",
+        description: deleteCustomers.message,
         variant: "success",
       });
       const remainingCustomers = customers.filter((c) => !selectedCustomerIds.includes(c.id ?? ""));
@@ -391,20 +391,20 @@ export function CustomerClient() {
                           />
                         </TableCell>
                         <TableCell
-                          onClick={() => router.push(`/dashboard/customers/${customer.id}`)}
+                          onClick={() => router.push(`/customers/${customer.id}`)}
                         >
                           <div className="font-medium">{capitalizeWords(customer.name)}</div>
                           <div className="text-sm text-muted-foreground">{customer.email}</div>
                         </TableCell>
                         <TableCell
                           className="hidden md:table-cell"
-                          onClick={() => router.push(`/dashboard/customers/${customer.id}`)}
+                          onClick={() => router.push(`/customers/${customer.id}`)}
                         >
                           {customer.phone}
                         </TableCell>
                         <TableCell
                           className="hidden sm:table-cell"
-                          onClick={() => router.push(`/dashboard/customers/${customer.id}`)}
+                          onClick={() => router.push(`/customers/${customer.id}`)}
                         >
                           <Badge
                             variant={
@@ -423,7 +423,7 @@ export function CustomerClient() {
                         </TableCell>
                         <TableCell
                           className="hidden md:table-cell"
-                          onClick={() => router.push(`/dashboard/customers/${customer.id}`)}
+                          onClick={() => router.push(`/customers/${customer.id}`)}
                         >
                           {formatDate(customer.updated_at || customer.created_at)}
                         </TableCell>
@@ -439,7 +439,7 @@ export function CustomerClient() {
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
                               <Can permission="customers.view">
                                 <DropdownMenuItem
-                                  onSelect={() => router.push(`/dashboard/customers/${customer.id}`)}
+                                  onSelect={() => router.push(`/customers/${customer.id}`)}
                                 >
                                   <Eye className="mr-2 h-4 w-4" />
                                   View Details

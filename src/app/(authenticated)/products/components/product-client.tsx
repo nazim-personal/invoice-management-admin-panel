@@ -132,8 +132,8 @@ export function ProductClient() {
         body: { ids: [productId] },
       });
       toast({
-        title: deleteCustomers.message,
-        description: `${deleteCustomers.data.results.deleted_count} product deleted.`,
+        title: "Success",
+        description: deleteCustomers.message,
         variant: "success",
       });
       setProducts(products.filter((product) => product.id !== productId));
@@ -162,8 +162,8 @@ export function ProductClient() {
       });
       const deleted_count = deleteCustomers.data.results.deleted_count;
       toast({
-        title: deleteCustomers.message,
-        description: `${deleted_count} product${deleted_count > 1 ? "s" : ""} deleted.`,
+        title: "Success",
+        description: deleteCustomers.message,
         variant: "success",
       });
       const remainingProducts = products.filter((p) => !selectedProductIds.includes(p.id ?? ""));
@@ -398,7 +398,7 @@ export function ProductClient() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <Can permission="products.view">
-                              <DropdownMenuItem onSelect={() => router.push(`/dashboard/products/${product.id}`)}>
+                              <DropdownMenuItem onSelect={() => router.push(`/products/${product.id}`)}>
                                 <Eye className="mr-2 h-4 w-4" />
                                 View Details
                               </DropdownMenuItem>

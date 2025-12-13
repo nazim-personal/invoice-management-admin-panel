@@ -40,7 +40,7 @@ const formSchema = z.object({
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { setUser } = useAuthContext();
+  const { login } = useAuthContext();
   const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -52,27 +52,7 @@ export default function LoginPage() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    try {
-      const response = await postRequest({ url: "/api/auth/sign-in", body: values });
-      if (response.success && response.user_info) {
-        setUser(response.user_info);
-        toast({
-          title: response.message,
-          description: `Welcome back ${response.user_info.name}!`,
-          variant: "success",
-        });
-        router.push("/dashboard");
-      } else {
-        throw new Error("Invalid response structure");
-      }
-    } catch (error: any) {
-      const errorHandler = handleApiError(error);
-      toast({
-        title: errorHandler.title,
-        description: errorHandler.description,
-        variant: "destructive",
-      });
-    }
+    await login(values);
   }
 
 

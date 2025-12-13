@@ -92,7 +92,7 @@ export function InvoiceClient() {
   const { toast } = useToast();
   const [invoices, setInvoices] = useState<InvoiceDataTypes[]>([]);
   const [searchTerm, setSearchTerm] = React.useState("");
-  const [activeTab, setActiveTab] = React.useState("");
+  const [activeTab, setActiveTab] = React.useState("all");
   const [currentPage, setCurrentPage] = React.useState(1);
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
   const [selectedInvoiceIds, setSelectedInvoiceIds] = React.useState<string[]>([]);
@@ -123,7 +123,7 @@ export function InvoiceClient() {
           page: currentPage,
           limit: rowsPerPage,
           q: query || undefined,
-          status: activeTab !== "" ? activeTab : undefined,
+          status: activeTab !== "all" ? activeTab : undefined,
         },
       });
       setInvoices(response.data.results || []);
@@ -162,8 +162,8 @@ export function InvoiceClient() {
       body: invoicePayload,
     });
     toast({
-      title: response.message,
-      description: `Invoice ${response.data.results.invoice_number} mark as paid.`,
+      title: "Success",
+      description: response.message,
       variant: "success",
     });
     setInvoices((prev) =>
@@ -188,8 +188,8 @@ export function InvoiceClient() {
         body: { ids: [invoiceId] },
       });
       toast({
-        title: deleteInvoices.message,
-        description: `${deleteInvoices.data.results.deleted_count} invoice deleted.`,
+        title: "Success",
+        description: deleteInvoices.message,
         variant: "success",
       });
       setInvoices(invoices.filter((invoice) => invoice.id !== invoiceId));
@@ -218,8 +218,8 @@ export function InvoiceClient() {
       });
       const deleted_count = deleteInvoices.data.results.deleted_count;
       toast({
-        title: deleteInvoices.message,
-        description: `${deleted_count} invoice${deleted_count > 1 ? "s" : ""} deleted.`,
+        title: "Success",
+        description: deleteInvoices.message,
         variant: "success",
       });
       const remainingInvoices = invoices.filter((c) => !selectedInvoiceIds.includes(c.id ?? ""));
@@ -343,7 +343,7 @@ export function InvoiceClient() {
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Status</SelectItem>
+              <SelectItem value="all">All Status</SelectItem>
               <SelectItem value="Paid">Paid</SelectItem>
               <SelectItem value="Pending">Pending</SelectItem>
               <SelectItem value="Overdue">Overdue</SelectItem>
@@ -351,7 +351,7 @@ export function InvoiceClient() {
           </Select>
           {selectedInvoiceIds.length > 0 && (
             <>
-              {(activeTab === 'Pending' || activeTab === 'Overdue' || activeTab === '') && (
+              {(activeTab === 'Pending' || activeTab === 'Overdue' || activeTab === 'all') && (
                 <Button variant="outline" size="sm" onClick={handleBulkSendWhatsApp}>
                   <WhatsAppIcon />
                   Send ({selectedInvoiceIds.length})
@@ -489,13 +489,13 @@ export function InvoiceClient() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <Can permission="invoices.view">
-                              <DropdownMenuItem onSelect={() => router.push(`/dashboard/invoices/${invoice.id}`)}>
+                              <DropdownMenuItem onSelect={() => router.push(`/invoices/${invoice.id}`)}>
                                 <Eye className="mr-2 h-4 w-4" />
                                 View Details
                               </DropdownMenuItem>
                             </Can>
                             <Can permission="invoices.update">
-                              <DropdownMenuItem onSelect={() => router.push(`/dashboard/invoices/${invoice.id}/edit`)}>
+                              <DropdownMenuItem onSelect={() => router.push(`/invoices/${invoice.id}/edit`)}>
                                 <Pencil className="mr-2 h-4 w-4" />
                                 Edit
                               </DropdownMenuItem>

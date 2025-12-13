@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState, ReactNode, Dispatch, SetStateAction } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { useToast } from '@/hooks/use-toast'
 import { getRequest, postRequest } from '@/lib/helpers/axios/RequestService'
 
@@ -29,6 +29,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User>(null)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
+  const pathname = usePathname()
   const { toast } = useToast()
 
   async function login(data: any) {
@@ -36,19 +37,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const resp = await postRequest({ url: '/api/auth/sign-in', body: data })
 
-      // Assuming postRequest returns the data directly as per the new RequestService implementation plan
-      // and the structure matches: { success: true, data: { results: { user: ... } } }
-      // But wait, the RequestService returns `data` directly if success is true.
-      // Let's verify the response structure from the requirements:
-      // Response: { "success": true, "data": { "results": { "access_token": "...", "user": { ... } } } }
-
-      // The current RequestService returns `data` (the whole JSON).
-      // So resp will be the whole JSON object.
-
-      if (resp.success && resp.user_info) {
-        setUser(resp.user_info)
-        toast({ title: 'Success', description: 'Login successful', variant: 'success' })
-        router.push('/')
+      if (resp.success) {
+        if (resp.user_info) {
+          setUser(resp.user_info)
+        } else {
+          // If user_info is missing, try to fetch it
+          await refreshUser()
+        }
+        toast({ title: 'Success', description: resp.message || 'Login successful', variant: 'success' })
+        router.push('/dashboard')
       } else {
         throw new Error('Invalid response structure')
       }
@@ -70,14 +67,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Let's assume /api/users/me returns the user profile.
       const resp = await getRequest({ url: '/api/users/me' })
-      if (resp.success && resp.data) {
+
+      // Fix: The /api/users/me endpoint returns { authenticated: boolean, user_info: User }
+      // It does NOT return { success: true, data: User } like other APIs might.
+      if (resp.authenticated && resp.user_info) {
+        setUser(resp.user_info)
+      } else if (resp.success && resp.data) {
+        // Fallback for standard API structure if it changes
         setUser(resp.data)
       } else {
         // If /me fails or returns no user, we might be unauthenticated
         setUser(null)
       }
-    } catch {
-      setUser(null)
+    } catch (error: any) {
+      // Only set user to null if it's a 401 or specific auth error
+      // If it's a 500 (server error), we might want to keep the user logged in (if they were)
+      // or at least not force a redirect immediately if we can avoid it.
+      // However, on initial load, if we can't verify the user, we can't let them in.
+      // But if this is a re-validation, maybe we can be more lenient?
+      // For now, let's assume if status is NOT 401, we don't logout.
+      if (error?.response?.status === 401) {
+        setUser(null)
+      } else {
+        // Log error but don't logout for 500s to avoid redirect loops or bad UX on server hiccups
+        console.error("Failed to refresh user:", error);
+        // If we don't set user(null), loading stays true? No, finally sets loading false.
+        // If loading is false and user is null (default), it will redirect.
+        // So we need to decide: if 500, do we let them in? No, we don't have user data.
+        // We can't let them in without user data.
+        // So strictly speaking, if /me fails, we can't authenticate.
+        // BUT, if the user was ALREADY logged in (persisted), we might use that?
+        // We don't persist user in localStorage in this code.
+
+        // So for initial load, 500 means we can't load.
+        // But the user's issue is likely about the DASHBOARD API 500.
+        // I've fixed the Dashboard page. I will leave this strictly safe for now.
+        setUser(null);
+      }
     } finally {
       setLoading(false)
     }
@@ -91,12 +117,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
     } finally {
       setUser(null)
+      // Manually clear cookie on client side as well to be safe
+      document.cookie = "user_details=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
       router.replace('/')
     }
   }
 
   useEffect(() => {
     const publicPaths = ['/', '/forgot-password'];
+
+    // Try to load user from cookie first for instant UI
+    if (typeof document !== 'undefined') {
+      const match = document.cookie.match(new RegExp('(^| )user_details=([^;]+)'));
+      if (match) {
+        try {
+          const userDetails = JSON.parse(decodeURIComponent(match[2]));
+          setUser(userDetails);
+          setLoading(false); // Optimistic load
+        } catch (e) {
+          console.error("Failed to parse user_details cookie", e);
+        }
+      }
+    }
+
     if (!publicPaths.includes(window.location.pathname)) {
       refreshUser()
     } else {
@@ -115,6 +158,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       window.removeEventListener('auth:unauthorized', handleUnauthorized);
     };
   }, [logout]);
+
+  // Protect routes
+  useEffect(() => {
+    const publicPaths = ['/', '/forgot-password'];
+    if (!loading && !user && !publicPaths.includes(pathname)) {
+      router.push('/');
+    }
+  }, [user, loading, router, pathname]);
 
   return (
     <AuthContext.Provider value={{ user, setUser, login, logout, loading, refreshUser }}>

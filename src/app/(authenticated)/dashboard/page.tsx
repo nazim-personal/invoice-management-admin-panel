@@ -71,6 +71,20 @@ export default function DashboardPage() {
         description: parsed.description,
         variant: "destructive",
       });
+      // Set default empty/zero data so the dashboard doesn't look broken or crash
+      setStats({
+        total_revenue: 0,
+        revenue_change_percent: 0,
+        total_customers: 0,
+        customers_change_percent: 0,
+        pending_invoices: 0,
+        total_invoices: 0,
+        total_products: 0,
+        sales_performance: [],
+        invoices: []
+      } as any); // Type casting as partial match or we can define full default object
+      setInvoices([]);
+      setChartData([]);
     } finally {
       setStatsLoading(false);
     }
@@ -88,7 +102,7 @@ export default function DashboardPage() {
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
       <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
-        <Link href="/dashboard/reports">
+        <Link href="/reports">
           <Card className="hover:bg-muted/50 transition-colors">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
@@ -107,7 +121,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </Link>
-        <Link href="/dashboard/customers">
+        <Link href="/customers">
           <Card className="hover:bg-muted/50 transition-colors">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
@@ -135,7 +149,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </Link>
-        <Link href="/dashboard/products">
+        <Link href="/products">
           <Card className="hover:bg-muted/50 transition-colors">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Products</CardTitle>
@@ -257,7 +271,7 @@ export default function DashboardPage() {
             </Table>
             <div className="mt-4 flex justify-end">
               <Button asChild variant="ghost" size="sm">
-                <Link href="/dashboard/invoices">
+                <Link href="/invoices">
                   View All <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>

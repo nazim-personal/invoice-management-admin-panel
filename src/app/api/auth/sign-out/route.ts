@@ -14,7 +14,9 @@ export async function POST() {
 
     if (response?.success) {
       deleteAccessToken();
-      return NextResponse.json({ success: true });
+      const res = NextResponse.json({ success: true });
+      res.cookies.delete("user_details");
+      return res;
     }
 
     return NextResponse.json({ error: "Sign-out failed" }, { status: 400 });

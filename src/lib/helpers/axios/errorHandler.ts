@@ -29,76 +29,25 @@ function formatValidationDetails(details: unknown): string {
 }
 
 export const handleApiError = (error: any): ReturnTypes => {
-  const safeMessage =
-    typeof error?.error?.message === "string" ? error?.error?.message : "Something went wrong";
+  // Prioritize the message from the API response structure
+  // Structure: { success: false, error: { code: "...", message: "...", details: ... } }
+  const apiError = error?.error;
+  const message = apiError?.message || error?.message || "Something went wrong";
+  const details = apiError?.details;
 
-  const safeDetails = error?.error?.details ?? undefined;
-
-  switch (error?.error?.code) {
-    case "validation_error":
-      return {
-        title: safeMessage || "Validation Error",
-        description: formatValidationDetails(safeDetails),
-      };
-
-    case "not_found":
-      return {
-        title: safeMessage || "Not Found",
-        description:
-          typeof safeDetails === "string"
-            ? safeDetails
-            : "Data not found.",
-      };
-    case "invalid_product":
-      return {
-        title: safeMessage || "Invalid product",
-        description:
-          typeof safeDetails === "string"
-            ? safeDetails
-            : "Product not found.",
-      };
-    case "invalid_customer":
-      return {
-        title: safeMessage || "Invalid customer",
-        description:
-          typeof safeDetails === "string"
-            ? safeDetails
-            : "Customer not found.",
-      };
-
-    case "invalid_credentials":
-      return {
-        title: safeMessage || "Invalid Credentials",
-        description:
-          typeof safeDetails === "string"
-            ? safeDetails
-            : '',
-      };
-
-    case "duplicate_entry":
-      return {
-        title: safeMessage || "Duplicate Entry",
-        description: formatValidationDetails(safeDetails) || "Record already exists.",
-      };
-
-    case "integrity_error":
-      return {
-        title: safeMessage || "Integrity Error",
-        description: formatValidationDetails(safeDetails) || "Database constraint failed.",
-      };
-
-    case "server_error":
-      return {
-        title: "Server Error",
-        description: "Something went wrong on our side. Please try again later.",
-      };
-
-    default:
-      return {
-        title: "Unexpected Error",
-        description: safeMessage,
-      };
+  // If it's a validation error, we might want to show details
+  if (apiError?.code === "validation_error" && details) {
+    return {
+      title: message,
+      description: formatValidationDetails(details),
+    };
   }
+
+  // For all other errors, use the message from the API
+  return {
+    title: "Error", // Or use 'message' as title if preferred, but 'Error' + description is standard
+    description: message,
+  };
 };
 
 export function axiosErrorResponse(err: any): NextResponse {
