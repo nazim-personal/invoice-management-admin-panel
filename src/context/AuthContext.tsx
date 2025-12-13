@@ -11,6 +11,7 @@ type User = {
   username: string
   name: string
   role: string
+  permissions: string[]
 } | null
 
 interface AuthContextProps {
@@ -33,24 +34,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function login(data: any) {
     setLoading(true)
     try {
-      const resp = await fetch('/api/auth/sign-in', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      })
+      const resp = await postRequest({ url: '/api/auth/sign-in', body: data })
 
-      if (!resp.ok) {
-        const errorData = await resp.json()
-        throw new Error(errorData.message || 'Login failed')
+      // Assuming postRequest returns the data directly as per the new RequestService implementation plan
+      // and the structure matches: { success: true, data: { results: { user: ... } } }
+      // But wait, the RequestService returns `data` directly if success is true.
+      // Let's verify the response structure from the requirements:
+      // Response: { "success": true, "data": { "results": { "access_token": "...", "user": { ... } } } }
+
+      // The current RequestService returns `data` (the whole JSON).
+      // So resp will be the whole JSON object.
+
+      if (resp.success && resp.user_info) {
+        setUser(resp.user_info)
+        toast({ title: 'Success', description: 'Login successful', variant: 'success' })
+        router.push('/')
+      } else {
+        throw new Error('Invalid response structure')
       }
 
-      const userData = await resp.json()
-      setUser(userData.user)
-      toast({ title: 'Success', description: 'Login successful', variant: 'success' })
-      router.push('/')
     } catch (error: any) {
       setUser(null)
-      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+      toast({ title: 'Error', description: error.message || 'Login failed', variant: 'destructive' })
     } finally {
       setLoading(false)
     }
@@ -58,9 +63,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function refreshUser() {
     try {
-      const resp = await getRequest({url: '/api/users/me'})      
-      if (!resp.authenticated) throw new Error('Unauthorized')
-      setUser(resp.user)
+      // We need a way to check if we are logged in.
+      // Usually /api/users/me or similar.
+      // The requirements say: "Store the user object and permissions array globally."
+      // And "Interceptor: ... call POST /api/auth/refresh to get a new access token"
+
+      // Let's assume /api/users/me returns the user profile.
+      const resp = await getRequest({ url: '/api/users/me' })
+      if (resp.success && resp.data) {
+        setUser(resp.data)
+      } else {
+        // If /me fails or returns no user, we might be unauthenticated
+        setUser(null)
+      }
     } catch {
       setUser(null)
     } finally {
@@ -70,7 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function logout() {
     try {
-      await postRequest({url: "/api/auth/sign-out", body: {}});
+      await postRequest({ url: "/api/auth/sign-out", body: {} });
       toast({ title: 'Success', description: 'Sign-out successful', variant: 'success' })
     } catch (error: any) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
@@ -81,8 +96,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    refreshUser()
+    const publicPaths = ['/', '/forgot-password'];
+    if (!publicPaths.includes(window.location.pathname)) {
+      refreshUser()
+    } else {
+      setLoading(false);
+    }
   }, [])
+
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      logout();
+    };
+
+    window.addEventListener('auth:unauthorized', handleUnauthorized);
+
+    return () => {
+      window.removeEventListener('auth:unauthorized', handleUnauthorized);
+    };
+  }, [logout]);
 
   return (
     <AuthContext.Provider value={{ user, setUser, login, logout, loading, refreshUser }}>

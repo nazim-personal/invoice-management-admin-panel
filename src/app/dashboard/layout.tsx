@@ -4,7 +4,7 @@ import Link from "next/link";
 import * as React from "react";
 import { usePathname } from "next/navigation";
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarTrigger, SidebarInset, useSidebar } from "@/components/ui/sidebar";
-import { LayoutDashboard, Users, Package, FileText, BarChart, Settings, LogOut, Loader, Menu, ChevronLeft, History } from "lucide-react";
+import { LayoutDashboard, Users, Package, FileText, BarChart, Settings, LogOut, Loader, Menu, ChevronLeft, History, CircleDollarSign } from "lucide-react";
 import Logo from "@/components/logo";
 import { MobileHeader } from "./components/mobile-header";
 import { useAuthContext } from "@/context/AuthContext";
@@ -16,7 +16,9 @@ const navItems = [
   { href: "/dashboard/customers", icon: Users, label: "Customers" },
   { href: "/dashboard/products", icon: Package, label: "Products" },
   { href: "/dashboard/invoices", icon: FileText, label: "Invoices" },
+  { href: "/dashboard/payments", icon: CircleDollarSign, label: "Payments" },
   { href: "/dashboard/reports", icon: BarChart, label: "Reports" },
+  { href: "/dashboard/users", icon: Users, label: "Users" },
   { href: "/dashboard/activity", icon: History, label: "Activity" },
 ];
 
@@ -68,7 +70,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         <SidebarContent>
           <SidebarMenu>
-            {navItems.map((item) => (
+            {navItems.filter(item => item.label !== "Users" || user?.role === 'admin').map((item) => (
               <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton
                   asChild

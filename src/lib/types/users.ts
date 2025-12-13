@@ -12,6 +12,7 @@ export interface UserDataTypes {
     id: string;
     role?: "user" | "admin";
     username?: string;
+    permissions?: string[];
 }
 
 export interface UserMeResponse {

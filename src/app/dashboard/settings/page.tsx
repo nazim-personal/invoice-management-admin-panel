@@ -12,6 +12,7 @@ import { ProfileSettings } from "./components/profile-settings";
 import { SecuritySettings } from "./components/security-settings";
 import { NotificationsSettings } from "./components/notifications-settings";
 import { BillingSettings } from "./components/billing-settings";
+import { AppearanceSettings } from "./components/appearance-settings";
 
 export default function SettingsPage() {
   return (
@@ -25,6 +26,7 @@ export default function SettingsPage() {
             <TabsTrigger value="profile" className="w-full justify-start">Profile</TabsTrigger>
             <TabsTrigger value="security" className="w-full justify-start">Security</TabsTrigger>
             <TabsTrigger value="notifications" className="w-full justify-start">Notifications</TabsTrigger>
+            <TabsTrigger value="appearance" className="w-full justify-start">Appearance</TabsTrigger>
             <TabsTrigger value="billing" className="w-full justify-start">Billing</TabsTrigger>
           </TabsList>
           <div className="flex-1">
@@ -36,6 +38,9 @@ export default function SettingsPage() {
             </TabsContent>
             <TabsContent value="notifications">
               <NotificationsSettings />
+            </TabsContent>
+            <TabsContent value="appearance">
+              <AppearanceSettings />
             </TabsContent>
             <TabsContent value="billing">
               <BillingSettings />

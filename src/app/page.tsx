@@ -53,15 +53,19 @@ export default function LoginPage() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      const data = await postRequest({ url: "/api/auth/sign-in", body: values });
-      setUser(data.user_info);
-      toast({
-        title: data?.message,
-        description: `Welcome back ${data.user_info.name}!`,
-        variant: "success",
-      });
-      router.push("/dashboard");
-    } catch (error: any) {      
+      const response = await postRequest({ url: "/api/auth/sign-in", body: values });
+      if (response.success && response.user_info) {
+        setUser(response.user_info);
+        toast({
+          title: response.message,
+          description: `Welcome back ${response.user_info.name}!`,
+          variant: "success",
+        });
+        router.push("/dashboard");
+      } else {
+        throw new Error("Invalid response structure");
+      }
+    } catch (error: any) {
       const errorHandler = handleApiError(error);
       toast({
         title: errorHandler.title,

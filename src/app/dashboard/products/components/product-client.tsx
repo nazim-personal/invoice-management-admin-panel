@@ -40,7 +40,11 @@ import {
   IndianRupee,
 } from "lucide-react";
 import { ProductForm } from "./product-form";
-import { Card, CardFooter } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -61,6 +65,8 @@ import { ProductSkeleton } from "./product-skeleton";
 import { DeletedResponse } from "@/lib/types/customers";
 import { capitalizeWords, formatDate } from "@/lib/helpers/forms";
 import { formatWithThousands } from "@/lib/helpers/miscellaneous";
+import { Can } from "@/components/Can";
+import { Badge } from "@/components/ui/badge";
 
 export function ProductClient() {
   const router = useRouter();
@@ -247,6 +253,7 @@ export function ProductClient() {
   return (
     <>
       <div className="flex items-center justify-between gap-4">
+        <h1 className="text-xl font-semibold font-headline tracking-tight">Products</h1>
         <div className="flex items-center gap-2">
           <div className="relative flex-1 md:grow-0">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -258,208 +265,236 @@ export function ProductClient() {
             />
           </div>
           {selectedProductIds.length > 0 && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete ({selectedProductIds.length})
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete the selected products.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleBulkDelete}>
-                    Continue
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <Can permission="products.delete">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete ({selectedProductIds.length})
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. This will permanently delete the selected products.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleBulkDelete}>
+                      Continue
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </Can>
           )}
         </div>
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={handleAddNew} size="sm" className="h-8 gap-1">
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Add Product
-            </Button>
-          </DialogTrigger>
+          <Can permission="products.create">
+            <DialogTrigger asChild>
+              <Button onClick={handleAddNew} size="sm" className="h-8 gap-1">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Create Product
+              </Button>
+            </DialogTrigger>
+          </Can>
           <DialogContent className="sm:max-w-lg">
             <DialogHeader>
               <DialogTitle className="font-headline">
-                {selectedProduct ? "Edit Product" : "Add New Product"}
+                {selectedProduct ? "Edit Product" : "Create Product"}
               </DialogTitle>
               <DialogDescription>
-                {selectedProduct ? "Update the details of your product." : "Fill in the details to add a new product."}
+                {selectedProduct
+                  ? "Make changes to the product here. Click save when you're done."
+                  : "Add a new product to your inventory. Click save when you're done."}
               </DialogDescription>
             </DialogHeader>
             <ProductForm product={selectedProduct} onSave={handleFormSave} />
           </DialogContent>
         </Dialog>
       </div>
-
-      <Card className="mt-4">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12">
-                <Checkbox
-                  checked={selectAllCheckedState}
-                  onCheckedChange={handleSelectAll}
-                  aria-label="Select all"
-                />
-              </TableHead>
-              <TableHead>Product Name</TableHead>
-              <TableHead className="hidden md:table-cell">Product Code</TableHead>
-              <TableHead className="hidden md:table-cell">Price</TableHead>
-              <TableHead className="hidden md:table-cell">Stock</TableHead>
-              <TableHead className="hidden md:table-cell">Last Updated</TableHead>
-              <TableHead>
-                <span className="sr-only">Actions</span>
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              Array.from({ length: rowsPerPage }).map((_, i) => <ProductSkeleton key={i} />)
-            ) : products.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                  No products found.
-                </TableCell>
-              </TableRow>
-            ) : (products.map((product) => (
-              <TableRow
-                key={product.id}
-                data-state={selectedProductIds.includes(product.id) ? "selected" : ""}
-              >
-                <TableCell className="w-12" onClick={(e) => e.stopPropagation()}>
-                  <Checkbox
-                    checked={selectedProductIds.includes(product.id)}
-                    onCheckedChange={(checked) => handleSelectOne(product.id, !!checked)}
-                    aria-label="Select row"
-                  />
-                </TableCell>
-                <TableCell className="cursor-pointer" onClick={() => router.push(`/dashboard/products/${product.id}`)}>
-                  <div className="font-medium">{capitalizeWords(product.name)}</div>
-                </TableCell>
-                <TableCell className="hidden md:table-cell cursor-pointer" onClick={() => router.push(`/dashboard/products/${product.id}`)}>
-                  {product.product_code}
-                </TableCell>
-                <TableCell className="hidden md:table-cell cursor-pointer" onClick={() => router.push(`/dashboard/products/${product.id}`)}>
-                  <span className="inline-flex items-center gap-0.5">
-                    <IndianRupee className="h-3 w-3" />
-                    {formatWithThousands(product.price)}
-                  </span>
-                </TableCell>
-                <TableCell className="hidden md:table-cell cursor-pointer" onClick={() => router.push(`/dashboard/products/${product.id}`)}>
-                  {product.stock}
-                </TableCell>
-                <TableCell className="hidden md:table-cell cursor-pointer" onClick={() => router.push(`/dashboard/products/${product.id}`)}>
-                  {formatDate(product.updated_at || product.created_at)}
-                </TableCell>
-                <TableCell onClick={(e) => e.stopPropagation()}>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button aria-haspopup="true" size="icon" variant="ghost">
-                        <MoreHorizontal className="h-4 w-4" />
-                        <span className="sr-only">Toggle menu</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuItem onSelect={() => router.push(`/dashboard/products/${product.id}`)}>
-                        <Eye className="mr-2 h-4 w-4" />
-                        View Details
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onSelect={() => handleEdit(product)}>
-                        <Pencil className="mr-2 h-4 w-4" />
-                        Edit Product
-                      </DropdownMenuItem>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <DropdownMenuItem
-                            className="text-destructive"
-                            onSelect={(e) => e.preventDefault()}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete Product
-                          </DropdownMenuItem>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This action cannot be undone. This will permanently delete this product.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDelete(product.id)}>
-                              Continue
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            )
-            )
-            )}
-          </TableBody>
-        </Table>
-        <CardFooter className="flex items-center justify-between border-t pt-4">
-          <div className="text-sm text-muted-foreground">
-            Showing {startProduct} to {endProduct} of {meta.total} products
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center space-x-2">
-              <p className="text-sm font-medium">Rows per page</p>
-              <Select
-                value={`${rowsPerPage}`}
-                onValueChange={(value) => handleRowsPerPageChange(value)}
-              >
-                <SelectTrigger className="h-8 w-[70px]">
-                  <SelectValue placeholder={`${rowsPerPage}`} />
-                </SelectTrigger>
-                <SelectContent side="top">
-                  {[10, 20, 30, 40, 50].map((pageSize) => (
-                    <SelectItem key={pageSize} value={`${pageSize}`}>
-                      {pageSize}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+      <Can permission="products.list" fallback={<div className="p-8 text-center text-muted-foreground">You do not have permission to view products.</div>}>
+        <Card className="mt-4">
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={selectAllCheckedState}
+                      onCheckedChange={handleSelectAll}
+                      aria-label="Select All"
+                    />
+                  </TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead className="hidden md:table-cell">Description</TableHead>
+                  <TableHead>Price</TableHead>
+                  <TableHead>Stock</TableHead>
+                  <TableHead className="hidden md:table-cell">Last Updated</TableHead>
+                  <TableHead>
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  Array.from({ length: rowsPerPage }).map((_, i) => <ProductSkeleton key={i} />)
+                ) : products.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                      No products found.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  products.map((product) => (
+                    <TableRow
+                      key={product.id}
+                      data-state={selectedProductIds.includes(product.id) ? "selected" : ""}
+                    >
+                      <TableCell className="w-12" onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={selectedProductIds.includes(product.id)}
+                          onCheckedChange={(checked) => handleSelectOne(product.id, !!checked)}
+                          aria-label="Select row"
+                        />
+                      </TableCell>
+                      <Can permission="products.view">
+                        <TableCell className="font-medium cursor-pointer" onClick={() => router.push(`/dashboard/products/${product.id}`)}>
+                          {product.name}
+                        </TableCell>
+                      </Can>
+                      <Can permission="products.view">
+                        <TableCell className="hidden md:table-cell max-w-xs truncate cursor-pointer" onClick={() => router.push(`/dashboard/products/${product.id}`)}>
+                          {product.description || "-"}
+                        </TableCell>
+                      </Can>
+                      <Can permission="products.view">
+                        <TableCell className="cursor-pointer" onClick={() => router.push(`/dashboard/products/${product.id}`)}>
+                          <div className="flex items-center"><IndianRupee className="h-3 w-3 mr-0" />{formatWithThousands(product.price, true)}</div>
+                        </TableCell>
+                      </Can>
+                      <Can permission="products.view">
+                        <TableCell className="cursor-pointer" onClick={() => router.push(`/dashboard/products/${product.id}`)}>
+                          <Badge variant={product.stock > 10 ? "secondary" : "destructive"}>
+                            {product.stock}
+                          </Badge>
+                        </TableCell>
+                      </Can>
+                      <Can permission="products.view">
+                        <TableCell className="hidden md:table-cell cursor-pointer" onClick={() => router.push(`/dashboard/products/${product.id}`)}>
+                          {formatDate(product.updated_at || product.created_at)}
+                        </TableCell>
+                      </Can>
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button aria-haspopup="true" size="icon" variant="ghost">
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Toggle menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <Can permission="products.view">
+                              <DropdownMenuItem onSelect={() => router.push(`/dashboard/products/${product.id}`)}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                View Details
+                              </DropdownMenuItem>
+                            </Can>
+                            <Can permission="products.update">
+                              <DropdownMenuItem onSelect={() => handleEdit(product)}>
+                                <Pencil className="mr-2 h-4 w-4" />
+                                Edit Product
+                              </DropdownMenuItem>
+                            </Can>
+                            <Can permission="products.delete">
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <DropdownMenuItem
+                                    className="text-destructive"
+                                    onSelect={(e) => e.preventDefault()}
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete Product
+                                  </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This action cannot be undone. This will permanently delete this product.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDelete(product.id)}>
+                                      Continue
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </Can>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+          <CardFooter className="flex items-center justify-between w-full border-t pt-4">
+            <div className="text-xs text-muted-foreground">
+              {selectedProductIds.length > 0
+                ? `${selectedProductIds.length} of ${products.length} product(s) selected.`
+                : `Showing ${startProduct}-${endProduct} of ${meta.total} products`}
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handlePreviousPage}
-              disabled={currentPage === 1}
-            >
-              <ChevronLeft className="h-4 w-4" />
-              <span className="sr-only">Previous</span>
-            </Button>
-            <span className="text-sm">{currentPage} / {totalPages}</span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleNextPage}
-              disabled={currentPage === totalPages}
-            >
-              <span className="sr-only">Next</span>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </CardFooter>
-      </Card>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Rows per page</span>
+                <Select value={String(rowsPerPage)} onValueChange={handleRowsPerPageChange}>
+                  <SelectTrigger className="h-8 w-[70px]">
+                    <SelectValue placeholder={String(rowsPerPage)} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="30">30</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Page {currentPage} of {totalPages}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={handlePreviousPage}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  <span className="sr-only">Previous page</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={handleNextPage}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                  <span className="sr-only">Next page</span>
+                </Button>
+              </div>
+            </div>
+          </CardFooter>
+        </Card>
+      </Can>
     </>
   );
 }

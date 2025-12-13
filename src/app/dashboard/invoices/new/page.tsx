@@ -28,6 +28,7 @@ import * as React from "react";
 import { useState } from "react";
 import CustomersInvoice from "./customers";
 import ProductsInvoice from "./products";
+import { Can } from "@/components/Can";
 
 
 export default function NewInvoicePage() {
@@ -216,215 +217,217 @@ export default function NewInvoicePage() {
 
 
   return (
-    <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
-      <div className="flex items-center gap-4">
-        <Button variant="outline" size="icon" className="h-7 w-7" onClick={handleDiscard}>
-          <ChevronLeft className="h-4 w-4" />
-          <span className="sr-only">Back</span>
-        </Button>
-        <h1 className="flex-1 shrink-0 whitespace-nowrap text-xl font-semibold font-headline tracking-tight sm:grow-0">
-          New Invoice
-        </h1>
-        <Badge variant="outline" className="ml-auto sm:ml-0">
-          Draft
-        </Badge>
-        <div className="hidden items-center gap-2 md:ml-auto md:flex">
+    <Can permission="invoices.create" fallback={<div className="p-8 text-center text-muted-foreground">You do not have permission to create invoices.</div>}>
+      <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+        <div className="flex items-center gap-4">
+          <Button variant="outline" size="icon" className="h-7 w-7" onClick={handleDiscard}>
+            <ChevronLeft className="h-4 w-4" />
+            <span className="sr-only">Back</span>
+          </Button>
+          <h1 className="flex-1 shrink-0 whitespace-nowrap text-xl font-semibold font-headline tracking-tight sm:grow-0">
+            New Invoice
+          </h1>
+          <Badge variant="outline" className="ml-auto sm:ml-0">
+            Draft
+          </Badge>
+          <div className="hidden items-center gap-2 md:ml-auto md:flex">
+            <Button variant="outline" size="sm" onClick={handleDiscard}>
+              Discard
+            </Button>
+            <Button size="sm" onClick={handleSaveInvoice} loading={isLoading} disabled={items.length === 0 || !selectedCustomerId}>Save Invoice</Button>
+          </div>
+        </div>
+        <div className="grid gap-4 md:grid-cols-[1fr_250px] lg:grid-cols-3 lg:gap-8">
+          <div className="grid auto-rows-max items-start gap-4 lg:col-span-2 lg:gap-8">
+            <CustomersInvoice customers={customers} setCustomers={setCustomers} selectedCustomerId={selectedCustomerId} setSelectedCustomerId={setSelectedCustomerId} />
+            <ProductsInvoice items={items} setItems={setItems} />
+          </div>
+          <div className="grid auto-rows-max items-start gap-4 lg:gap-8">
+            <Card>
+              <CardHeader>
+                <CardTitle className="font-headline">Summary</CardTitle>
+              </CardHeader>
+              <CardContent className="grid gap-3">
+                {/* Subtotal */}
+                <div className="flex justify-between text-sm">
+                  <span>Subtotal</span>
+                  <span className="inline-flex items-center gap-0.5">
+                    <IndianRupee className="h-3 w-3" />
+                    {subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+
+                {/* Tax */}
+                <div className="flex justify-between text-sm">
+                  <span>Tax ({tax}%)</span>
+                  <span className="inline-flex items-center gap-0.5">
+                    <IndianRupee className="h-3 w-3" />
+                    {taxAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+
+                {/* Discount */}
+                {discount > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span>Discount</span>
+                    <span className="inline-flex items-center gap-0.5">
+                      <Minus className="h-3.5 w-3.5" />
+                      <IndianRupee className="h-3 w-3" />
+                      {discount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                )}
+
+                {/* Due Date Input */}
+                <div className="flex items-center justify-between mt-2">
+                  <Label htmlFor="due-date" className="flex items-center gap-2">Due Date</Label>
+                  <Input
+                    id="due-date"
+                    type="date"
+                    value={dueDate || new Date().toISOString().split("T")[0]}
+                    onChange={(e) => setDueDate(e.target.value)}
+                    className="w-36"
+                  />
+                </div>
+                <hr className="my-1 border-gray-200" />
+
+                {/* Total */}
+                <div className="flex justify-between text-base font-semibold">
+                  <span>Total</span>
+                  <span className="inline-flex items-center gap-0.5">
+                    <IndianRupee className="h-4 w-4" />{
+                      total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+
+                {/* Amount Paid */}
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="amount-paid">
+                    Amount Paid (
+                    <span className="inline-flex items-center">
+                      <IndianRupee className="h-3 w-3" />
+                    </span>
+                    )
+                  </Label>
+                  <Input
+                    id="amount-paid"
+                    type="number"
+                    min={0}
+                    max={isNaN(total) ? undefined : total} // never pass NaN
+                    value={isNaN(amountPaid) ? "" : amountPaid} // show empty if NaN
+                    onChange={(e) => {
+                      let val = e.target.value;
+                      if (val === "") {
+                        setAmountPaid(NaN);
+                        return;
+                      }
+                      let parsed = parseFloat(val);
+                      if (!isNaN(parsed)) {
+                        // clamp to total and round to 2 decimals
+                        if (parsed > total) parsed = total;
+                        parsed = Math.round(parsed * 100) / 100;
+                        setAmountPaid(parsed);
+                      }
+                    }}
+                    onBlur={(e) => {
+                      let parsed = parseFloat(e.target.value);
+                      if (isNaN(parsed) || parsed < 0) parsed = 0;
+                      if (parsed > total) parsed = total;
+                      parsed = Math.round(parsed * 100) / 100;
+                      setAmountPaid(parsed);
+                    }}
+
+                    className="w-24"
+                  />
+                </div>
+
+
+                {/* Amount Due */}
+                <div className="flex justify-between text-base font-semibold text-destructive">
+                  <span>Amount Due</span>
+                  <span className="inline-flex items-center gap-0.5">
+                    <IndianRupee className="h-4 w-4" />
+                    {amountDue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+
+                {/* Tax Input */}
+                <div className="flex items-center justify-between mt-2">
+                  <Label htmlFor="tax" className="flex items-center gap-2">Tax (%)</Label>
+                  <Input
+                    id="tax"
+                    type="number"
+                    min={0}
+                    value={isNaN(tax) ? "" : tax}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === "") {
+                        setTax(NaN);
+                        return;
+                      }
+                      const parsed = parseInt(val, 10);
+                      if (!isNaN(parsed)) setTax(parsed);
+                    }}
+                    onBlur={(e) => {
+                      const parsed = parseInt(e.target.value, 10);
+                      setTax(isNaN(parsed) || parsed < 0 ? 0 : parsed);
+                    }}
+                    className="w-20"
+                  />
+                </div>
+
+                {/* Discount Input */}
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="Discount">
+                    Discount (
+                    <span className="inline-flex items-center">
+                      <IndianRupee className="h-3 w-3" />
+                    </span>
+                    )
+                  </Label>
+                  <Input
+                    id="discount"
+                    type="number"
+                    min={0}
+                    value={isNaN(discount) ? "" : discount}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const parsed = parseFloat(val);
+
+                      // If input is empty, set as null instead of NaN
+                      if (val === "") {
+                        setDiscount(NaN);
+                        return;
+                      }
+
+                      if (!isNaN(parsed)) setDiscount(parsed);
+                    }}
+                    onBlur={(e) => {
+                      const parsed = parseFloat(e.target.value);
+                      // If invalid, set to 0
+                      setDiscount(parsed == null || isNaN(parsed) || parsed < 0 ? 0 : parsed);
+                    }}
+                    className="w-24"
+                  />
+                </div>
+
+              </CardContent>
+              <CardFooter>
+                <Button className="w-full" onClick={handleGeneratePdf} disabled={items.length === 0 || !selectedCustomerId}>
+                  Generate PDF
+                </Button>
+              </CardFooter>
+            </Card>
+
+          </div>
+        </div>
+        <div className="flex items-center justify-center gap-2 md:hidden">
           <Button variant="outline" size="sm" onClick={handleDiscard}>
             Discard
           </Button>
           <Button size="sm" onClick={handleSaveInvoice} loading={isLoading} disabled={items.length === 0 || !selectedCustomerId}>Save Invoice</Button>
         </div>
-      </div>
-      <div className="grid gap-4 md:grid-cols-[1fr_250px] lg:grid-cols-3 lg:gap-8">
-        <div className="grid auto-rows-max items-start gap-4 lg:col-span-2 lg:gap-8">
-          <CustomersInvoice customers={customers} setCustomers={setCustomers} selectedCustomerId={selectedCustomerId} setSelectedCustomerId={setSelectedCustomerId} />
-          <ProductsInvoice items={items} setItems={setItems} />
-        </div>
-        <div className="grid auto-rows-max items-start gap-4 lg:gap-8">
-          <Card>
-            <CardHeader>
-              <CardTitle className="font-headline">Summary</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-3">
-              {/* Subtotal */}
-              <div className="flex justify-between text-sm">
-                <span>Subtotal</span>
-                <span className="inline-flex items-center gap-0.5">
-                  <IndianRupee className="h-3 w-3" />
-                  {subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
-              </div>
-
-              {/* Tax */}
-              <div className="flex justify-between text-sm">
-                <span>Tax ({tax}%)</span>
-                <span className="inline-flex items-center gap-0.5">
-                  <IndianRupee className="h-3 w-3" />
-                  {taxAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
-              </div>
-
-              {/* Discount */}
-              {discount > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span>Discount</span>
-                  <span className="inline-flex items-center gap-0.5">
-                    <Minus className="h-3.5 w-3.5" />
-                    <IndianRupee className="h-3 w-3" />
-                    {discount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </span>
-                </div>
-              )}
-
-              {/* Due Date Input */}
-              <div className="flex items-center justify-between mt-2">
-                <Label htmlFor="due-date" className="flex items-center gap-2">Due Date</Label>
-                <Input
-                  id="due-date"
-                  type="date"
-                  value={dueDate || new Date().toISOString().split("T")[0]}
-                  onChange={(e) => setDueDate(e.target.value)}
-                  className="w-36"
-                />
-              </div>
-              <hr className="my-1 border-gray-200" />
-
-              {/* Total */}
-              <div className="flex justify-between text-base font-semibold">
-                <span>Total</span>
-                <span className="inline-flex items-center gap-0.5">
-                  <IndianRupee className="h-4 w-4" />{
-                    total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
-              </div>
-
-              {/* Amount Paid */}
-              <div className="flex items-center justify-between">
-                <Label htmlFor="amount-paid">
-                  Amount Paid (
-                  <span className="inline-flex items-center">
-                    <IndianRupee className="h-3 w-3" />
-                  </span>
-                  )
-                </Label>
-                <Input
-                  id="amount-paid"
-                  type="number"
-                  min={0}
-                  max={isNaN(total) ? undefined : total} // never pass NaN
-                  value={isNaN(amountPaid) ? "" : amountPaid} // show empty if NaN
-                  onChange={(e) => {
-                    let val = e.target.value;
-                    if (val === "") {
-                      setAmountPaid(NaN);
-                      return;
-                    }
-                    let parsed = parseFloat(val);
-                    if (!isNaN(parsed)) {
-                      // clamp to total and round to 2 decimals
-                      if (parsed > total) parsed = total;
-                      parsed = Math.round(parsed * 100) / 100;
-                      setAmountPaid(parsed);
-                    }
-                  }}
-                  onBlur={(e) => {
-                    let parsed = parseFloat(e.target.value);
-                    if (isNaN(parsed) || parsed < 0) parsed = 0;
-                    if (parsed > total) parsed = total;
-                    parsed = Math.round(parsed * 100) / 100;
-                    setAmountPaid(parsed);
-                  }}
-
-                  className="w-24"
-                />
-              </div>
-
-
-              {/* Amount Due */}
-              <div className="flex justify-between text-base font-semibold text-destructive">
-                <span>Amount Due</span>
-                <span className="inline-flex items-center gap-0.5">
-                  <IndianRupee className="h-4 w-4" />
-                  {amountDue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
-              </div>
-
-              {/* Tax Input */}
-              <div className="flex items-center justify-between mt-2">
-                <Label htmlFor="tax" className="flex items-center gap-2">Tax (%)</Label>
-                <Input
-                  id="tax"
-                  type="number"
-                  min={0}
-                  value={isNaN(tax) ? "" : tax}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === "") {
-                      setTax(NaN);
-                      return;
-                    }
-                    const parsed = parseInt(val, 10);
-                    if (!isNaN(parsed)) setTax(parsed);
-                  }}
-                  onBlur={(e) => {
-                    const parsed = parseInt(e.target.value, 10);
-                    setTax(isNaN(parsed) || parsed < 0 ? 0 : parsed);
-                  }}
-                  className="w-20"
-                />
-              </div>
-
-              {/* Discount Input */}
-              <div className="flex items-center justify-between">
-                <Label htmlFor="Discount">
-                  Discount (
-                  <span className="inline-flex items-center">
-                    <IndianRupee className="h-3 w-3" />
-                  </span>
-                  )
-                </Label>
-                <Input
-                  id="discount"
-                  type="number"
-                  min={0}
-                  value={isNaN(discount) ? "" : discount}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    const parsed = parseFloat(val);
-
-                    // If input is empty, set as null instead of NaN
-                    if (val === "") {
-                      setDiscount(NaN);
-                      return;
-                    }
-
-                    if (!isNaN(parsed)) setDiscount(parsed);
-                  }}
-                  onBlur={(e) => {
-                    const parsed = parseFloat(e.target.value);
-                    // If invalid, set to 0
-                    setDiscount(parsed == null || isNaN(parsed) || parsed < 0 ? 0 : parsed);
-                  }}
-                  className="w-24"
-                />
-              </div>
-
-            </CardContent>
-            <CardFooter>
-              <Button className="w-full" onClick={handleGeneratePdf} disabled={items.length === 0 || !selectedCustomerId}>
-                Generate PDF
-              </Button>
-            </CardFooter>
-          </Card>
-
-        </div>
-      </div>
-      <div className="flex items-center justify-center gap-2 md:hidden">
-        <Button variant="outline" size="sm" onClick={handleDiscard}>
-          Discard
-        </Button>
-        <Button size="sm" onClick={handleSaveInvoice} loading={isLoading} disabled={items.length === 0 || !selectedCustomerId}>Save Invoice</Button>
-      </div>
-    </main>
+      </main>
+    </Can>
   );
 }

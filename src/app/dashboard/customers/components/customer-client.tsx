@@ -71,6 +71,7 @@ import { handleApiError } from "@/lib/helpers/axios/errorHandler";
 import { useDebounce } from "@/hooks/useDebounce";
 import { CustomerSkeleton } from "./customer-skeleton";
 import { capitalizeWords, formatDate } from "@/lib/helpers/forms";
+import { Can } from "@/components/Can";
 
 export function CustomerClient() {
   const router = useRouter();
@@ -224,8 +225,8 @@ export function CustomerClient() {
   const selectAllCheckedState = isAllOnPageSelected
     ? true
     : isSomeOnPageSelected
-    ? "indeterminate"
-    : false;
+      ? "indeterminate"
+      : false;
   const totalPages = Math.ceil(meta.total / rowsPerPage);
   const startCustomer = customers.length > 0 ? (meta.page - 1) * rowsPerPage + 1 : 0;
   const endCustomer = Math.min(meta.page * rowsPerPage, meta.total);
@@ -287,26 +288,28 @@ export function CustomerClient() {
           </TabsList>
           <div className="flex items-center gap-2">
             {selectedCustomerIds.length > 0 && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete ({selectedCustomerIds.length})
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This action cannot be undone. This will permanently delete the selected customers and all their associated data.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleBulkDelete}>Continue</AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              <Can permission="customers.delete">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete ({selectedCustomerIds.length})
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete the selected customers and all their associated data.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleBulkDelete}>Continue</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </Can>
             )}
             <div className="relative flex-1 md:grow-0">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -318,21 +321,23 @@ export function CustomerClient() {
               />
             </div>
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={handleAddNew} size="sm" className="h-8 gap-1">
-                  <PlusCircle className="h-3.5 w-3.5" />
-                  <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Add Customer</span>
-                </Button>
-              </DialogTrigger>
+              <Can permission="customers.create">
+                <DialogTrigger asChild>
+                  <Button onClick={handleAddNew} size="sm" className="h-8 gap-1">
+                    <PlusCircle className="h-3.5 w-3.5" />
+                    <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Create Customer</span>
+                  </Button>
+                </DialogTrigger>
+              </Can>
               <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
                   <DialogTitle className="font-headline">
-                    {selectedCustomer ? "Edit Customer" : "Add New Customer"}
+                    {selectedCustomer ? "Edit Customer" : "Create Customer"}
                   </DialogTitle>
                   <DialogDescription>
                     {selectedCustomer
                       ? "Update the details of your customer."
-                      : "Fill in the details to add a new customer."}
+                      : "Fill in the details to create a new customer."}
                   </DialogDescription>
                 </DialogHeader>
                 <CustomerForm customer={selectedCustomer} onSave={handleFormSave} />
@@ -406,10 +411,10 @@ export function CustomerClient() {
                               customer.status === "Paid"
                                 ? "default"
                                 : customer.status === "New"
-                                ? "outline"
-                                : customer.status === "Pending"
-                                ? "secondary"
-                                : "destructive"
+                                  ? "outline"
+                                  : customer.status === "Pending"
+                                    ? "secondary"
+                                    : "destructive"
                             }
                             className="capitalize"
                           >
@@ -432,46 +437,52 @@ export function CustomerClient() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem
-                                onSelect={() => router.push(`/dashboard/customers/${customer.id}`)}
-                              >
-                                <Eye className="mr-2 h-4 w-4" />
-                                View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onSelect={() => handleEdit(customer)}>
-                                <Pencil className="mr-2 h-4 w-4" />
-                                Edit Customer
-                              </DropdownMenuItem>
+                              <Can permission="customers.view">
+                                <DropdownMenuItem
+                                  onSelect={() => router.push(`/dashboard/customers/${customer.id}`)}
+                                >
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  View Details
+                                </DropdownMenuItem>
+                              </Can>
+                              <Can permission="customers.update">
+                                <DropdownMenuItem onSelect={() => handleEdit(customer)}>
+                                  <Pencil className="mr-2 h-4 w-4" />
+                                  Edit Customer
+                                </DropdownMenuItem>
+                              </Can>
                               <DropdownMenuItem onSelect={() => handleGetInsights(customer)}>
                                 <MessageSquareQuote className="mr-2 h-4 w-4" />
                                 Get AI Insights
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <DropdownMenuItem
-                                    className="text-destructive"
-                                    onSelect={(e) => e.preventDefault()}
-                                  >
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Delete Customer
-                                  </DropdownMenuItem>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      This action cannot be undone. This will permanently delete this customer and all associated invoices.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDelete(customer.id)}>
-                                      Continue
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
+                              <Can permission="customers.delete">
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <DropdownMenuItem
+                                      className="text-destructive"
+                                      onSelect={(e) => e.preventDefault()}
+                                    >
+                                      <Trash2 className="mr-2 h-4 w-4" />
+                                      Delete Customer
+                                    </DropdownMenuItem>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        This action cannot be undone. This will permanently delete this customer and all associated invoices.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => handleDelete(customer.id)}>
+                                        Continue
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </Can>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>

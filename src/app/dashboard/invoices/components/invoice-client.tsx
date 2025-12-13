@@ -71,6 +71,7 @@ import { handleApiError } from "@/lib/helpers/axios/errorHandler";
 import { capitalizeWords, formatDate } from "@/lib/helpers/forms";
 import { InvoiceSkeleton } from "./invoice-skeleton";
 import { formatWithThousands } from "@/lib/helpers/miscellaneous";
+import { Can } from "@/components/Can";
 
 const WhatsAppIcon = () => (
   <svg
@@ -321,47 +322,10 @@ export function InvoiceClient() {
   }
 
   return (
-    <Tabs defaultValue="" onValueChange={handleTabChange} className="w-full">
+    <Tabs defaultValue={activeTab} onValueChange={handleTabChange} className="w-full">
       <div className="flex items-center justify-between gap-4">
-        <TabsList>
-          <TabsTrigger value="">All</TabsTrigger>
-          <TabsTrigger value="Pending">Pending</TabsTrigger>
-          <TabsTrigger value="Paid">Paid</TabsTrigger>
-          <TabsTrigger value="Overdue">Overdue</TabsTrigger>
-        </TabsList>
+        <h1 className="text-xl font-semibold font-headline tracking-tight">Invoices</h1>
         <div className="flex items-center gap-2">
-          {selectedInvoiceIds.length > 0 && (
-            <>
-              {(activeTab === 'Pending' || activeTab === 'Overdue' || activeTab === '') && (
-                <Button variant="outline" size="sm" onClick={handleBulkSendWhatsApp}>
-                  <WhatsAppIcon />
-                  Send ({selectedInvoiceIds.length})
-                </Button>
-              )}
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete ({selectedInvoiceIds.length})
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This action cannot be undone. This will permanently delete the selected invoices.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleBulkDelete}>
-                      Continue
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </>
-          )}
           <div className="relative flex-1 md:grow-0">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -371,6 +335,56 @@ export function InvoiceClient() {
               onChange={handleSearch}
             />
           </div>
+          <Select value={activeTab} onValueChange={(val) => {
+            setActiveTab(val);
+            setCurrentPage(1);
+          }}>
+            <SelectTrigger className="w-[130px]">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">All Status</SelectItem>
+              <SelectItem value="Paid">Paid</SelectItem>
+              <SelectItem value="Pending">Pending</SelectItem>
+              <SelectItem value="Overdue">Overdue</SelectItem>
+            </SelectContent>
+          </Select>
+          {selectedInvoiceIds.length > 0 && (
+            <>
+              {(activeTab === 'Pending' || activeTab === 'Overdue' || activeTab === '') && (
+                <Button variant="outline" size="sm" onClick={handleBulkSendWhatsApp}>
+                  <WhatsAppIcon />
+                  Send ({selectedInvoiceIds.length})
+                </Button>
+              )}
+              <Can permission="invoices.delete">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete ({selectedInvoiceIds.length})
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete the selected invoices.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleBulkDelete}>
+                        Continue
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </Can>
+            </>
+          )}
+        </div>
+        <Can permission="invoices.create">
           <Button asChild size="sm" className="h-8 gap-1">
             <Link href="/dashboard/invoices/new">
               <PlusCircle className="h-3.5 w-3.5" />
@@ -379,9 +393,9 @@ export function InvoiceClient() {
               </span>
             </Link>
           </Button>
-        </div>
+        </Can>
       </div>
-      <TabsContent value={activeTab}>
+      <Can permission="invoices.list" fallback={<div className="p-8 text-center text-muted-foreground">You do not have permission to view invoices.</div>}>
         <Card className="mt-4">
           <CardContent className="p-0">
             <Table>
@@ -394,11 +408,11 @@ export function InvoiceClient() {
                       aria-label="Select All"
                     />
                   </TableHead>
-                  <TableHead>Invoice</TableHead>
+                  <TableHead>Invoice #</TableHead>
                   <TableHead>Customer</TableHead>
                   <TableHead>Amount</TableHead>
-                  <TableHead className="hidden sm:table-cell">Status</TableHead>
-                  <TableHead className="hidden md:table-cell">Last Updated</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Date</TableHead>
                   <TableHead>
                     <span className="sr-only">Actions</span>
                   </TableHead>
@@ -409,7 +423,7 @@ export function InvoiceClient() {
                   Array.from({ length: rowsPerPage }).map((_, i) => <InvoiceSkeleton key={i} />)
                 ) : invoices.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                    <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                       No invoices found.
                     </TableCell>
                   </TableRow>
@@ -431,10 +445,10 @@ export function InvoiceClient() {
                       </TableCell>
                       <TableCell className="cursor-pointer" onClick={() => router.push(`/dashboard/invoices/${invoice.id}`)}>
                         <div className="flex items-center">{capitalizeWords(invoice.customer.name)}</div>
-                          <div className="text-xs text-muted-foreground flex items-center">
-                            {invoice.customer.phone}
-                          </div>
-                        </TableCell>
+                        <div className="text-xs text-muted-foreground flex items-center">
+                          {invoice.customer.phone}
+                        </div>
+                      </TableCell>
                       <TableCell className="cursor-pointer" onClick={() => router.push(`/dashboard/invoices/${invoice.id}`)}>
                         <div className="flex items-center"><IndianRupee className="h-3 w-3 mr-0" />{formatWithThousands(invoice.total_amount, true)}</div>
                         {invoice.status !== 'Paid' && (
@@ -443,7 +457,7 @@ export function InvoiceClient() {
                           </div>
                         )}
                       </TableCell>
-                      <TableCell className="hidden sm:table-cell cursor-pointer" onClick={() => router.push(`/dashboard/invoices/${invoice.id}`)}>
+                      <TableCell className="cursor-pointer" onClick={() => router.push(`/dashboard/invoices/${invoice.id}`)}>
                         <Badge
                           variant={
                             invoice.status === "Paid"
@@ -457,7 +471,7 @@ export function InvoiceClient() {
                           {invoice.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="hidden md:table-cell cursor-pointer" onClick={() => router.push(`/dashboard/invoices/${invoice.id}`)}>
+                      <TableCell className="cursor-pointer" onClick={() => router.push(`/dashboard/invoices/${invoice.id}`)}>
                         {formatDate(invoice.updated_at || invoice.created_at)}
                       </TableCell>
                       <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
@@ -474,52 +488,62 @@ export function InvoiceClient() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem onSelect={() => router.push(`/dashboard/invoices/${invoice.id}`)}>
-                              <Eye className="mr-2 h-4 w-4" />
-                              View
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onSelect={() => router.push(`/dashboard/invoices/${invoice.id}/edit`)}>
-                              <Pencil className="mr-2 h-4 w-4" />
-                              Edit
-                            </DropdownMenuItem>
+                            <Can permission="invoices.view">
+                              <DropdownMenuItem onSelect={() => router.push(`/dashboard/invoices/${invoice.id}`)}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                View Details
+                              </DropdownMenuItem>
+                            </Can>
+                            <Can permission="invoices.update">
+                              <DropdownMenuItem onSelect={() => router.push(`/dashboard/invoices/${invoice.id}/edit`)}>
+                                <Pencil className="mr-2 h-4 w-4" />
+                                Edit
+                              </DropdownMenuItem>
+                            </Can>
                             {invoice.status !== 'Paid' && (
                               <>
-                                <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsPaid(invoice.id); }}>
-                                  <CircleDollarSign className="mr-2 h-4 w-4" />
-                                  Mark as Paid
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => handleSendWhatsApp(invoice)}>
-                                  <WhatsAppIcon />
-                                  Send WhatsApp
-                                </DropdownMenuItem>
+                                <Can permission="payments.create">
+                                  <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsPaid(invoice.id); }}>
+                                    <CircleDollarSign className="mr-2 h-4 w-4" />
+                                    Mark as Paid
+                                  </DropdownMenuItem>
+                                </Can>
+                                <Can permission="invoices.view">
+                                  <DropdownMenuItem onSelect={() => handleSendWhatsApp(invoice)}>
+                                    <WhatsAppIcon />
+                                    Send WhatsApp
+                                  </DropdownMenuItem>
+                                </Can>
                               </>
                             )}
                             <DropdownMenuSeparator />
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <DropdownMenuItem
-                                  className="text-destructive"
-                                  onSelect={(e) => e.preventDefault()}
-                                >
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    This action cannot be undone. This will permanently delete this invoice.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDelete(invoice.id)}>
-                                    Continue
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
+                            <Can permission="invoices.delete">
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <DropdownMenuItem
+                                    className="text-destructive"
+                                    onSelect={(e) => e.preventDefault()}
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This action cannot be undone. This will permanently delete this invoice.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDelete(invoice.id)}>
+                                      Continue
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </Can>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -579,7 +603,7 @@ export function InvoiceClient() {
             </div>
           </CardFooter>
         </Card>
-      </TabsContent>
+      </Can>
     </Tabs>
   );
 }
