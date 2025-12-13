@@ -42,7 +42,7 @@ export default function EditInvoicePage() {
 
   const [invoice, setInvoice] = React.useState<InvoiceDetailsType | null>(null);
   const [customers, setCustomers] = useState<CustomerDataTypes[]>([]);
-  const [selectedCustomerId, setSelectedCustomerId] = React.useState<number | null>(Number(customerIdFromQuery));
+  const [selectedCustomerId, setSelectedCustomerId] = React.useState<string | null>(customerIdFromQuery);
   const [items, setItems] = useState<InvoiceItem[]>([]);
   const [tax, setTax] = React.useState(18);
   const [discount, setDiscount] = React.useState(0);
@@ -66,7 +66,7 @@ export default function EditInvoicePage() {
         url: `/api/invoices/${id}`,
       });
       if (response?.data?.results) {
-        const invoice = response.data.results        
+        const invoice = response.data.results
         setInvoice(invoice);
         setItems(invoice.items)
         setTax(invoice.tax_percent)
@@ -135,17 +135,27 @@ export default function EditInvoicePage() {
           return;
         }
       }
+      console.log('items: ', items);
+
       setIsLoading(true);
-      const invoicePayload = {
+      const invoicePayload: any = {
+        customer_id: selectedCustomerId,
         due_date: dueDate,
         tax_percent: tax,
         discount_amount: discount,
-        amount_paid: amountPaid,
         items: items.map((item) => ({
-          product_id: item.id,
+          product_id: item.product_id || item.product.id,
           quantity: item.quantity,
-        }))
+        })),
       };
+
+      // Only include initial_payment if amountPaid > 0
+      if (amountPaid > 0) {
+        invoicePayload.initial_payment = {
+          amount: amountPaid,
+          method: "cash",
+        };
+      }
       const response: InvoiceApiResponseTypes<InvoiceDataTypes> = await putRequest({
         url: `/api/invoices/${params.id}`,
         body: invoicePayload,
@@ -162,7 +172,7 @@ export default function EditInvoicePage() {
       setDiscount(0);
       setAmountPaid(0);
       setTax(18);
-      setSelectedCustomerId(0)
+      setSelectedCustomerId('')
       setDueDate(new Date().toISOString().split("T")[0])
       router.back();
       return response
@@ -230,15 +240,20 @@ export default function EditInvoicePage() {
     if (response?.success) {
       await generateInvoicePDF({
         invoiceNumber: 'IBV', // dynamic
+        date: new Date().toISOString().split("T")[0],
+        dueDate: new Date().toISOString().split("T")[0],
         customer: selectedCustomer as CustomerDataTypes,
         items,
+        // total: invoice.total_amount,
+        // amountDue: invoice.due_amount,
         subtotal,
-        tax,
-        taxAmount,
+        // tax: invoice.tax_percent,
         discount,
-        total,
-        amountPaid,
-        amountDue
+        status: "paid",
+        // shipping: 123,
+        notes: "Thank you for your business!"
+        // taxAmount,
+        // amountPaid
       });
     }
   };

@@ -99,15 +99,17 @@ export default function ProductsInvoice({ items, setItems }: IPropsTypes) {
     }, [currentPage]);
 
     const availableProducts = products.filter(
-        (p) => !items.some((item) => item.id === p.id)
+        (p) => !items.some((item) => item.product_id === p.id || item.product.id === p.id)
     );
 
-    const handleQuantityChange = (productId: string, quantity: number | "") => {
+    const handleQuantityChange = (itemId: string, quantity: number | "") => {
         setItems(
             items.map((item) =>
-                item.id === productId
+                item.id === itemId
                     ? {
                         ...item,
+                        product_id: item.product_id,
+                        product: item.product,
                         quantity: quantity === "" ? 0 : (isNaN(Number(quantity)) || Number(quantity) < 0 ? 0 : Number(quantity))
                     }
                     : item
@@ -115,8 +117,8 @@ export default function ProductsInvoice({ items, setItems }: IPropsTypes) {
         );
     };
 
-    const handleRemoveItem = (productId: string) => {
-        setItems(items.filter((item) => item.id !== productId));
+    const handleRemoveItem = (itemId: string) => {
+        setItems(items.filter((item) => item.id !== itemId));
     };
 
     const handleLoadMoreProducts = () => {
