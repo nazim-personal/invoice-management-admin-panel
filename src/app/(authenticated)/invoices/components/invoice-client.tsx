@@ -386,7 +386,7 @@ export function InvoiceClient() {
         </div>
         <Can permission="invoices.create">
           <Button asChild size="sm" className="h-8 gap-1">
-            <Link href="/dashboard/invoices/new">
+            <Link href="/invoices/new">
               <PlusCircle className="h-3.5 w-3.5" />
               <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
                 Create Invoice
@@ -440,16 +440,16 @@ export function InvoiceClient() {
                           aria-label="Select row"
                         />
                       </TableCell>
-                      <TableCell className="font-medium cursor-pointer" onClick={() => router.push(`/dashboard/invoices/${invoice.id}`)}>
+                      <TableCell className="font-medium cursor-pointer" onClick={() => router.push(`/invoices/${invoice.id}`)}>
                         {invoice.invoice_number}
                       </TableCell>
-                      <TableCell className="cursor-pointer" onClick={() => router.push(`/dashboard/invoices/${invoice.id}`)}>
+                      <TableCell className="cursor-pointer" onClick={() => router.push(`/invoices/${invoice.id}`)}>
                         <div className="flex items-center">{capitalizeWords(invoice.customer.name)}</div>
                         <div className="text-xs text-muted-foreground flex items-center">
                           {invoice.customer.phone}
                         </div>
                       </TableCell>
-                      <TableCell className="cursor-pointer" onClick={() => router.push(`/dashboard/invoices/${invoice.id}`)}>
+                      <TableCell className="cursor-pointer" onClick={() => router.push(`/invoices/${invoice.id}`)}>
                         <div className="flex items-center"><IndianRupee className="h-3 w-3 mr-0" />{formatWithThousands(invoice.total_amount, true)}</div>
                         {invoice.status !== 'Paid' && (
                           <div className="text-xs text-muted-foreground flex items-center">
@@ -457,7 +457,7 @@ export function InvoiceClient() {
                           </div>
                         )}
                       </TableCell>
-                      <TableCell className="cursor-pointer" onClick={() => router.push(`/dashboard/invoices/${invoice.id}`)}>
+                      <TableCell className="cursor-pointer" onClick={() => router.push(`/invoices/${invoice.id}`)}>
                         <Badge
                           variant={
                             invoice.status === "Paid"
@@ -471,7 +471,7 @@ export function InvoiceClient() {
                           {invoice.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="cursor-pointer" onClick={() => router.push(`/dashboard/invoices/${invoice.id}`)}>
+                      <TableCell className="cursor-pointer" onClick={() => router.push(`/invoices/${invoice.id}`)}>
                         {formatDate(invoice.updated_at || invoice.created_at)}
                       </TableCell>
                       <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>

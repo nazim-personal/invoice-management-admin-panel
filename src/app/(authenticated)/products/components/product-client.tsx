@@ -361,7 +361,7 @@ export function ProductClient() {
                         />
                       </TableCell>
                       <Can permission="products.view">
-                        <TableCell className="font-medium cursor-pointer" onClick={() => router.push(`/dashboard/products/${product.id}`)}>
+                        <TableCell className="font-medium cursor-pointer" onClick={() => router.push(`/products/${product.id}`)}>
                           {product.name}
                         </TableCell>
                       </Can>
