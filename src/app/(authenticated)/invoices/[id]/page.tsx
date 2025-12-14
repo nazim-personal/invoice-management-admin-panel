@@ -29,6 +29,8 @@ import { InvoiceDetailsApiResponseType, InvoiceDetailsType } from "@/lib/types/i
 import { ChevronLeft, Download, IndianRupee, Minus, Pencil, FileText, Users, CircleDollarSign, Package } from "lucide-react";
 import { Activity, ActivityType, getActivityType, formatActivityTitle, formatActivityDescription } from "@/lib/types/activity";
 import { ApiResponse } from "@/lib/types/api";
+import { PaymentForm } from "@/app/(authenticated)/payments/components/payment-form";
+import { postRequest } from "@/lib/helpers/axios/RequestService";
 
 const iconMap: Record<ActivityType, React.ElementType> = {
   Invoice: FileText,
@@ -67,6 +69,8 @@ export default function ViewInvoicePage() {
   const [activities, setActivities] = React.useState<Activity[]>([]);
   const [qrCodeDataUrl, setQrCodeDataUrl] = React.useState<string | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
+  const [isPaymentFormOpen, setIsPaymentFormOpen] = React.useState(false);
+  const [isPhonePeLoading, setIsPhonePeLoading] = React.useState(false);
 
   const getInvoice = async (id: string) => {
     setIsLoading(true);
@@ -161,6 +165,33 @@ export default function ViewInvoicePage() {
     }
   };
 
+  const handlePhonePePayment = async () => {
+    if (!invoice?.id) return;
+
+    setIsPhonePeLoading(true);
+    try {
+      const response = await postRequest({
+        url: `/api/invoices/${invoice.id}/phonepe-payment`,
+        body: {},
+      });
+
+      if (response.data.results?.payment_url) {
+        // Redirect to PhonePe payment page
+        window.location.href = response.data.results.payment_url;
+      } else {
+        throw new Error("Payment URL not received");
+      }
+    } catch (error: any) {
+      const parsed = handleApiError(error);
+      toast({
+        title: parsed.title,
+        description: parsed.description,
+        variant: "destructive",
+      });
+      setIsPhonePeLoading(false);
+    }
+  };
+
   const handleEdit = () => {
     const from = searchParams.get('from');
     let editUrl = `/invoices/${invoice?.id}/edit`;
@@ -196,8 +227,28 @@ export default function ViewInvoicePage() {
             <Download className="mr-2 h-4 w-4" />
             Download PDF
           </Button>
+          {invoice.status !== 'Paid' && invoice.due_amount > 0 && (
+            <>
+              <Button variant="outline" size="sm" onClick={() => setIsPaymentFormOpen(true)}>
+                <CircleDollarSign className="mr-2 h-4 w-4" />
+                Record Payment
+              </Button>
+              <Button size="sm" onClick={handlePhonePePayment} disabled={isPhonePeLoading}>
+                {isPhonePeLoading ? "Processing..." : "Pay with PhonePe"}
+              </Button>
+            </>
+          )}
         </div>
       </div>
+
+      <PaymentForm
+        invoiceId={invoice.id}
+        invoiceTotal={invoice.total_amount}
+        amountDue={invoice.due_amount}
+        open={isPaymentFormOpen}
+        onOpenChange={setIsPaymentFormOpen}
+        onSuccess={() => getInvoice(invoice.id)}
+      />
       <Card>
         <CardHeader className="flex flex-row items-start justify-between gap-4">
           <div>

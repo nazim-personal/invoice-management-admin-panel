@@ -177,7 +177,7 @@ export function PaymentClient() {
                                             </TableCell>
                                             <TableCell>{formatDate(payment.payment_date)}</TableCell>
                                             <TableCell>{payment.method}</TableCell>
-                                            <TableCell>{payment.reference_number || "-"}</TableCell>
+                                            <TableCell>{payment.reference_no || "-"}</TableCell>
                                             <TableCell className="text-right">
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
