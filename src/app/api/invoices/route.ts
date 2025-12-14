@@ -13,6 +13,7 @@ export async function GET(req: Request) {
     const limit = searchParams.get("limit") || "10";
     const q = searchParams.get("q") || undefined;
     const status = searchParams.get("status") || undefined;
+    const product_id = searchParams.get("product_id") || undefined;
 
     const response = await withAuthProxy<InvoiceApiResponseTypes>({
       url: API_INVOICES,
@@ -22,6 +23,7 @@ export async function GET(req: Request) {
         limit,
         ...(q ? { q } : {}),
         ...(status ? { status } : {}),
+        ...(product_id ? { product_id } : {}),
       },
     });
     return NextResponse.json(response);

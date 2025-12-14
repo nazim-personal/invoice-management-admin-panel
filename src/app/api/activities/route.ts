@@ -1,0 +1,18 @@
+import { API_ACTIVITIES } from "@/lib/apiEndPoints";
+import { withAuthProxy } from "@/lib/helpers/axios/withAuthProxy";
+import { ApiResponse } from "@/lib/types/api";
+import { Activity } from "@/lib/types/activity";
+import { nextErrorResponse } from "@/lib/helpers/axios/nextErrorResponse";
+import { NextResponse } from "next/server";
+
+export async function GET(req: Request) {
+  try {
+    const response = await withAuthProxy<ApiResponse<Activity[]>>({
+      url: API_ACTIVITIES,
+      method: "GET",
+    });
+    return NextResponse.json(response);
+  } catch (err: any) {
+    return nextErrorResponse(err);
+  }
+}

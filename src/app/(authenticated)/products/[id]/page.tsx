@@ -21,6 +21,7 @@ import {
 import {
   Table,
   TableBody,
+  TableCell,
   TableHead,
   TableHeader,
   TableRow
@@ -29,12 +30,17 @@ import { useToast } from "@/hooks/use-toast";
 import { handleApiError } from "@/lib/helpers/axios/errorHandler";
 import { getRequest } from "@/lib/helpers/axios/RequestService";
 import { ProductDataTypes, ProductDetailsApiResponseType } from "@/lib/types/products";
+import { InvoiceDataTypes, InvoiceApiResponseTypes } from "@/lib/types/invoices";
 import {
   Barcode,
   Boxes,
   ChevronLeft,
   IndianRupee,
-  Pencil
+  Pencil,
+  Eye,
+  MoreHorizontal,
+  CircleDollarSign,
+  Trash2
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import * as React from "react";
@@ -48,16 +54,20 @@ export default function ViewProductPage() {
   const params = useParams();
   const { toast } = useToast();
   const [product, setProduct] = React.useState<ProductDataTypes>();
+  const [invoices, setInvoices] = React.useState<InvoiceDataTypes[]>([]);
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(true);
 
   const getProduct = async (id: string) => {
     setIsLoading(true);
     try {
-      const response: ProductDetailsApiResponseType = await getRequest({
-        url: `/api/products/${id}`,
-      });
-      setProduct(response.data.results);
+      const [productResponse, invoicesResponse] = await Promise.all([
+        getRequest({ url: `/api/products/${id}` }),
+        getRequest({ url: `/api/invoices?product_id=${id}&limit=5` })
+      ]);
+
+      setProduct((productResponse as ProductDetailsApiResponseType).data.results);
+      setInvoices((invoicesResponse as InvoiceApiResponseTypes).data.results as InvoiceDataTypes[]);
     } catch (err: any) {
       const parsed = handleApiError(err);
       toast({
@@ -217,15 +227,15 @@ export default function ViewProductPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {/* {customer.aggregates.invoices.map((invoice) => (
-                  <TableRow key={invoice.invoice_number}>
-                    <TableCell className="font-medium cursor-pointer" onClick={() => router.push(`/dashboard/invoices/${invoice.id}?from=/dashboard/customers/${params.id}`)}>
+                {invoices.map((invoice) => (
+                  <TableRow key={invoice.id}>
+                    <TableCell className="font-medium cursor-pointer" onClick={() => router.push(`/invoices/${invoice.id}`)}>
                       {invoice.invoice_number}
                     </TableCell>
-                    <TableCell className="cursor-pointer" onClick={() => router.push(`/dashboard/invoices/${invoice.id}?from=/dashboard/customers/${params.id}`)}>
+                    <TableCell className="cursor-pointer" onClick={() => router.push(`/invoices/${invoice.id}`)}>
                       {new Date(invoice.created_at).toLocaleDateString("en-GB")}
                     </TableCell>
-                    <TableCell className="cursor-pointer" onClick={() => router.push(`/dashboard/invoices/${invoice.id}?from=/dashboard/customers/${params.id}`)}>
+                    <TableCell className="cursor-pointer" onClick={() => router.push(`/invoices/${invoice.id}`)}>
                       <Badge
                         variant={
                           invoice.status === "Paid"
@@ -239,81 +249,28 @@ export default function ViewProductPage() {
                         {invoice.status}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right cursor-pointer" onClick={() => router.push(`/dashboard/invoices/${invoice.id}?from=/dashboard/customers/${params.id}`)}>
-                      <div>₹{invoice.total_amount}</div>
+                    <TableCell className="text-right cursor-pointer" onClick={() => router.push(`/invoices/${invoice.id}`)}>
+                      <div>₹{formatWithThousands(invoice.total_amount)}</div>
                       {invoice.status !== 'Paid' && (
                         <div className="text-xs text-muted-foreground">
-                          Due: ₹{invoice.due_amount}
+                          Due: ₹{formatWithThousands(invoice.due_amount)}
                         </div>
                       )}
                     </TableCell>
-                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button size="icon" variant="ghost">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem onSelect={() => router.push(`/dashboard/invoices/${invoice.id}?from=/dashboard/customers/${params.id}`)}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            View
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => router.push(`/dashboard/invoices/${invoice.id}/edit?from=/dashboard/customers/${params.id}`)}>
-                            <Pencil className="mr-2 h-4 w-4" />
-                            Edit
-                          </DropdownMenuItem>
-                          {invoice.status !== 'Paid' && (
-                            <>
-                              <DropdownMenuItem onSelect={() => handleMarkAsPaid(invoice.id)}>
-                                <CircleDollarSign className="mr-2 h-4 w-4" />
-                                Mark as Paid
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onSelect={() => handleSendWhatsApp(invoice)}>
-                                <WhatsAppIcon />
-                                Send WhatsApp
-                              </DropdownMenuItem>
-                            </>
-                          )}
-                          <DropdownMenuSeparator />
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <DropdownMenuItem
-                                className="text-destructive"
-                                onSelect={(e) => e.preventDefault()}
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete
-                              </DropdownMenuItem>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  This action cannot be undone. This will permanently delete this invoice.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDeleteInvoice(invoice.id)}>
-                                  Continue
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                    <TableCell className="text-right">
+                      <Button size="icon" variant="ghost" onClick={() => router.push(`/invoices/${invoice.id}`)}>
+                        <Eye className="h-4 w-4" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
-                {customer.aggregates.invoices.length === 0 && (
+                {invoices.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-muted-foreground">
-                      No invoices found for this customer.
+                      No invoices found for this product.
                     </TableCell>
                   </TableRow>
-                )} */}
+                )}
               </TableBody>
             </Table>
           </CardContent>

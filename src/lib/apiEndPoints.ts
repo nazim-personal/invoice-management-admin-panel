@@ -1,0 +1,9 @@
+export const API_ACTIVITIES = "/activities/";
+export const API_ACTIVITIES_ME = "/activities/me/";
+export const API_INVOICES = "/invoices";
+export const API_CUSTOMERS = "/customers";
+export const API_REPORTS_SUMMARY = "/reports/summary/";
+export const API_REPORTS_SALES = "/reports/sales/";
+export const API_REPORTS_PRODUCTS_TOP = "/reports/products/top/";
+export const API_REPORTS_PAYMENTS = "/reports/payments/";
+export const API_REPORTS_CUSTOMERS_AGING = "/reports/customers/aging/";

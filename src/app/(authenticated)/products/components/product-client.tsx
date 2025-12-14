@@ -366,24 +366,24 @@ export function ProductClient() {
                         </TableCell>
                       </Can>
                       <Can permission="products.view">
-                        <TableCell className="hidden md:table-cell max-w-xs truncate cursor-pointer" onClick={() => router.push(`/dashboard/products/${product.id}`)}>
+                        <TableCell className="hidden md:table-cell max-w-xs truncate cursor-pointer" onClick={() => router.push(`/products/${product.id}`)}>
                           {product.description || "-"}
                         </TableCell>
                       </Can>
                       <Can permission="products.view">
-                        <TableCell className="cursor-pointer" onClick={() => router.push(`/dashboard/products/${product.id}`)}>
+                        <TableCell className="cursor-pointer" onClick={() => router.push(`/products/${product.id}`)}>
                           <div className="flex items-center"><IndianRupee className="h-3 w-3 mr-0" />{formatWithThousands(product.price, true)}</div>
                         </TableCell>
                       </Can>
                       <Can permission="products.view">
-                        <TableCell className="cursor-pointer" onClick={() => router.push(`/dashboard/products/${product.id}`)}>
+                        <TableCell className="cursor-pointer" onClick={() => router.push(`/products/${product.id}`)}>
                           <Badge variant={product.stock > 10 ? "secondary" : "destructive"}>
                             {product.stock}
                           </Badge>
                         </TableCell>
                       </Can>
                       <Can permission="products.view">
-                        <TableCell className="hidden md:table-cell cursor-pointer" onClick={() => router.push(`/dashboard/products/${product.id}`)}>
+                        <TableCell className="hidden md:table-cell cursor-pointer" onClick={() => router.push(`/products/${product.id}`)}>
                           {formatDate(product.updated_at || product.created_at)}
                         </TableCell>
                       </Can>

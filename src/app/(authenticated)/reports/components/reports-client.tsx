@@ -68,7 +68,7 @@ export function ReportsClient() {
         url: '/api/reports',
         params: { from, to }
       });
-      setReportData(response.data);
+      setReportData(response.data.results || response.data);
     } catch (err: any) {
       const parsed = handleApiError(err);
       toast({
@@ -210,7 +210,15 @@ export function ReportsClient() {
                   tickLine={false}
                   axisLine={false}
                   tickMargin={8}
-                  tickFormatter={(value) => format(new Date(value), "MMM dd")}
+                  tickFormatter={(value) => {
+                    try {
+                      const date = new Date(value);
+                      if (isNaN(date.getTime())) return value;
+                      return format(date, "MMM dd");
+                    } catch {
+                      return value;
+                    }
+                  }}
                 />
                 <YAxis
                   tickFormatter={(value) => `₹${value / 1000}k`}

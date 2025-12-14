@@ -11,6 +11,8 @@ export interface ApiResponse<T> {
   };
 }
 
+export type ApiResponseTypes<T> = ApiResponse<T>;
+
 export interface MetaTypes {
   page: number
   limit: number

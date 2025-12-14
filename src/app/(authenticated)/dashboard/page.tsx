@@ -27,6 +27,7 @@ import { useToast } from '@/hooks/use-toast';
 import { getRequest } from '@/lib/helpers/axios/RequestService';
 import { handleApiError } from '@/lib/helpers/axios/errorHandler';
 import { capitalizeWords } from '@/lib/helpers/forms';
+import { formatWithThousands } from '@/lib/helpers/miscellaneous';
 import { DashboardApiResponseTypes, DashboardSalesPerformanceTypes, DashboardStatsTypes } from '@/lib/types/dashboard';
 import { InvoiceApiResponseTypes, InvoiceDataTypes } from '@/lib/types/invoices';
 import {
@@ -112,7 +113,7 @@ export default function DashboardPage() {
               <div className="text-2xl font-bold font-headline">
                 <span className="inline-flex items-center gap-0.5">
                   <IndianRupee className="h-5 w-5" />
-                  {stats?.total_revenue}
+                  {formatWithThousands(stats?.total_revenue)}
                 </span>
               </div>
               <p className="text-xs text-muted-foreground">
@@ -238,7 +239,7 @@ export default function DashboardPage() {
                       <div>
                         <span className="inline-flex items-center gap-0.5">
                           <IndianRupee className="h-3 w-3" />
-                          {invoice.total_amount}
+                          {formatWithThousands(invoice.total_amount)}
                         </span>
                       </div>
                       {invoice.status !== 'Paid' && (
@@ -246,7 +247,7 @@ export default function DashboardPage() {
                           <span className="inline-flex items-center gap-0.5">
                             Due:
                             <IndianRupee className="h-3 w-3 ml-0" />
-                            {invoice.due_amount}
+                            {formatWithThousands(invoice.due_amount)}
                           </span>
                         </div>
                       )}

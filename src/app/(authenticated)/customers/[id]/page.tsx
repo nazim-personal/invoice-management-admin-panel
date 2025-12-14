@@ -67,6 +67,17 @@ import { CustomerForm } from "../components/customer-form";
 import { DeletedResponse, InvoiceApiResponseTypes, InvoiceDataTypes } from "@/lib/types/invoices";
 import { CustomerDetailsSkeleton } from "./skeleton";
 import { capitalizeWords, formatDate } from "@/lib/helpers/forms";
+import { formatWithThousands } from "@/lib/helpers/miscellaneous";
+import { Activity, ActivityType, getActivityType, formatActivityTitle, formatActivityDescription } from "@/lib/types/activity";
+import { ApiResponse } from "@/lib/types/api";
+import { FileText, Users, Package } from "lucide-react";
+
+const iconMap: Record<ActivityType, React.ElementType> = {
+  Invoice: FileText,
+  Customer: Users,
+  Payment: CircleDollarSign,
+  Product: Package,
+};
 
 const WhatsAppIcon = () => (
   <svg
@@ -87,16 +98,21 @@ export default function ViewCustomerPage() {
   const params = useParams();
   const { toast } = useToast();
   const [customer, setCustomer] = React.useState<CustomerDetailsType>()
+  const [activities, setActivities] = React.useState<Activity[]>([]);
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(true);
 
   const getCustomer = async (id: string) => {
     setIsLoading(true);
     try {
-      const response: CustomerDetailsApiResponseType = await getRequest({
-        url: `/api/customers/${id}`,
-      });
-      setCustomer(response.data.results);
+      const [customerResponse, activitiesResponse] = await Promise.all([
+        getRequest({ url: `/api/customers/${id}` }),
+        getRequest({ url: `/api/customers/${id}/activities` })
+      ]);
+
+      setCustomer((customerResponse as CustomerDetailsApiResponseType).data.results);
+      // @ts-ignore
+      setActivities((activitiesResponse as ApiResponse<Activity[]>).data.results || (activitiesResponse as ApiResponse<Activity[]>).data);
     } catch (err: any) {
       const parsed = handleApiError(err);
       toast({
@@ -231,7 +247,7 @@ export default function ViewCustomerPage() {
             <div className="text-2xl font-bold font-headline">
               <span className="inline-flex items-center gap-0.5">
                 <IndianRupee className="h-6 w-6" strokeWidth={3} />
-                {customer.aggregates.total_billed}
+                {formatWithThousands(customer.aggregates.total_billed)}
               </span>
             </div>
             <p className="text-xs text-muted-foreground">Across {customer.aggregates.invoices.length} invoices</p>
@@ -246,7 +262,7 @@ export default function ViewCustomerPage() {
             <div className="text-2xl font-bold font-headline text-green-600">
               <span className="inline-flex items-center gap-0.5">
                 <IndianRupee className="h-6 w-6" strokeWidth={3} />
-                {customer.aggregates.total_paid}
+                {formatWithThousands(customer.aggregates.total_paid)}
               </span>
             </div>
             <p className="text-xs text-muted-foreground">Thank you!</p>
@@ -261,7 +277,7 @@ export default function ViewCustomerPage() {
             <div className="text-2xl font-bold font-headline text-destructive">
               <span className="inline-flex items-center gap-0.5">
                 <IndianRupee className="h-6 w-6" strokeWidth={3} />
-                {customer.aggregates.total_due}
+                {formatWithThousands(customer.aggregates.total_due)}
               </span>
             </div>
             <p className="text-xs text-muted-foreground">From outstanding invoices</p>
@@ -346,7 +362,7 @@ export default function ViewCustomerPage() {
                       <div>
                         <span className="inline-flex items-center gap-0.5">
                           <IndianRupee className="h-3 w-3" />
-                          {invoice.total_amount}
+                          {formatWithThousands(invoice.total_amount)}
                         </span>
                       </div>
                       {invoice.status !== 'Paid' && (
@@ -354,7 +370,7 @@ export default function ViewCustomerPage() {
                           Due:
                           <span className="inline-flex items-center gap-0.5">
                             <IndianRupee className="h-3 w-3" />
-                            {invoice.due_amount}
+                            {formatWithThousands(invoice.due_amount)}
                           </span>
                         </div>
                       )}
@@ -428,6 +444,52 @@ export default function ViewCustomerPage() {
                 )}
               </TableBody>
             </Table>
+          </CardContent>
+        </Card>
+
+        <Card className="col-span-full lg:col-span-3">
+          <CardHeader>
+            <CardTitle className="font-headline">Recent Activity</CardTitle>
+            <CardDescription>Latest actions related to this customer.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flow-root">
+              <ul role="list" className="-mb-8">
+                {activities.map((activity, activityIdx) => {
+                  const Icon = iconMap[getActivityType(activity.entity_type)];
+                  return (
+                    <li key={activity.id}>
+                      <div className="relative pb-8">
+                        {activityIdx !== activities.length - 1 ? (
+                          <span className="absolute left-5 top-5 -ml-px h-full w-0.5 bg-border" aria-hidden="true" />
+                        ) : null}
+                        <div className="relative flex items-start space-x-4">
+                          <div>
+                            <div className="relative px-1">
+                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted ring-8 ring-background">
+                                <Icon className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
+                              </div>
+                            </div>
+                          </div>
+                          <div className="min-w-0 flex-1 py-3">
+                            <div className="text-sm font-medium text-foreground">
+                              {formatActivityTitle(activity.action, activity.user_name)}
+                            </div>
+                            <p className="mt-0.5 text-sm text-muted-foreground">{formatActivityDescription(activity)}</p>
+                            <div className="mt-2 text-xs text-muted-foreground">
+                              {formatDate(activity.created_at)}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </li>
+                  );
+                })}
+                {activities.length === 0 && (
+                  <li className="py-4 text-center text-sm text-muted-foreground">No recent activity.</li>
+                )}
+              </ul>
+            </div>
           </CardContent>
         </Card>
       </div>
