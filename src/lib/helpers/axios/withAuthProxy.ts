@@ -7,17 +7,20 @@ interface ProxyOptions {
   method?: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
   data?: any;
   headers?: Record<string, string>;
-  params?: Record<string, any>
+  params?: Record<string, any>;
+  responseType?: "arraybuffer" | "blob" | "document" | "json" | "text" | "stream";
+  token?: string;
 }
 
 export async function withAuthProxy<T = any>(options: ProxyOptions): Promise<T> {
-  const token = await getAcessToken();
+  const token = options.token || await getAcessToken();
   try {
     const response = await API.request<T>({
       url: options.url,
       method: options.method || "GET",
       data: options.data,
       params: options.params,
+      responseType: options.responseType,
       headers: {
         ...(options.headers || {}),
         "Content-Type": "application/json",

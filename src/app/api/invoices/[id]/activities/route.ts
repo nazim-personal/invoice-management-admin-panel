@@ -5,10 +5,11 @@ import { Activity } from "@/lib/types/activity";
 import { nextErrorResponse } from "@/lib/helpers/axios/nextErrorResponse";
 import { NextResponse } from "next/server";
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   try {
     const response = await withAuthProxy<ApiResponse<Activity[]>>({
-      url: `${API_INVOICES}/${params.id}/activities/`,
+      url: `${API_INVOICES}/${id}/activities/`,
       method: "GET",
     });
     return NextResponse.json(response);

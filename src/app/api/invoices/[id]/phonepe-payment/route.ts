@@ -5,10 +5,11 @@ import { PhonePePaymentResponse } from "@/lib/types/payments";
 import { nextErrorResponse } from "@/lib/helpers/axios/nextErrorResponse";
 import { NextResponse } from "next/server";
 
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   try {
     const response = await withAuthProxy<ApiResponse<PhonePePaymentResponse>>({
-      url: `${API_INVOICES}/${params.id}/phonepe-payment/`,
+      url: `${API_INVOICES}/${id}/phonepe-payment/`,
       method: "POST",
     });
     return NextResponse.json(response);

@@ -6,9 +6,9 @@ import { ProductDetailsApiResponseType, ProductsApiResponseTypes } from "@/lib/t
 import { NextResponse } from "next/server";
 
 
-export async function GET(req: Request, context: { params: { id: string } }) {
-  try {        
-    const { id } = await context.params;    
+export async function GET(req: Request, context: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await context.params;
     const response = await withAuthProxy<ProductDetailsApiResponseType>({
       url: `${API_PRODUCTS}/${id}`,
       method: "GET"
@@ -19,7 +19,7 @@ export async function GET(req: Request, context: { params: { id: string } }) {
   }
 }
 
-export async function PUT(req: Request, context: { params: { id: string } }) {
+export async function PUT(req: Request, context: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await context.params;
     const body = await req.json();

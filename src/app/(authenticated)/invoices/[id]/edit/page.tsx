@@ -26,7 +26,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import QRCode from "qrcode";
 import * as React from "react";
 import { useState } from "react";
-import { formatCurrency, formatWithThousands, generateInvoicePDF } from "@/lib/helpers/miscellaneous";
+import { formatWithThousands } from "@/lib/helpers/miscellaneous";
 import CustomersInvoice from "../../new/customers";
 import ProductsInvoice from "../../new/products";
 import { EditInvoiceSkeleton } from "./edit-invoice-skeleton";
@@ -238,23 +238,34 @@ export default function EditInvoicePage() {
 
     const response = await handleSaveInvoice();
     if (response?.success) {
-      await generateInvoicePDF({
-        invoiceNumber: 'IBV', // dynamic
-        date: new Date().toISOString().split("T")[0],
-        dueDate: new Date().toISOString().split("T")[0],
-        customer: selectedCustomer as CustomerDataTypes,
-        items,
-        // total: invoice.total_amount,
-        // amountDue: invoice.due_amount,
-        subtotal,
-        // tax: invoice.tax_percent,
-        discount,
-        status: "paid",
-        // shipping: 123,
-        notes: "Thank you for your business!"
-        // taxAmount,
-        // amountPaid
-      });
+      try {
+        // Use params.id since we are in edit mode and ID is known
+        const invoiceId = params.id as string;
+        const pdfResponse = await fetch(`/api/invoices/${invoiceId}/pdf`);
+
+        if (!pdfResponse.ok) {
+          throw new Error("Failed to generate PDF");
+        }
+
+        const blob = await pdfResponse.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        // Use invoice number from state if available, or fallback
+        const invoiceNumber = invoice?.invoice_number || "invoice";
+        a.download = `invoice-${invoiceNumber}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } catch (error) {
+        console.error("PDF download error:", error);
+        toast({
+          title: "PDF Error",
+          description: "Failed to download invoice PDF.",
+          variant: "destructive",
+        });
+      }
     }
   };
 

@@ -4,10 +4,11 @@ import { PaymentsApiResponseTypes, PaymentDataTypes } from "@/lib/types/payments
 import { nextErrorResponse } from "@/lib/helpers/axios/nextErrorResponse";
 import { NextResponse } from "next/server";
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   try {
     const response = await withAuthProxy<PaymentsApiResponseTypes<PaymentDataTypes[]>>({
-      url: `${API_INVOICES}/${params.id}/payments/`,
+      url: `${API_INVOICES}/${id}/payments/`,
       method: "GET",
     });
     return NextResponse.json(response);

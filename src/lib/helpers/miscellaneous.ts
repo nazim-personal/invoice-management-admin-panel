@@ -18,4 +18,3 @@ export function formatWithThousands(
     maximumFractionDigits: 2,
   });
 }
-

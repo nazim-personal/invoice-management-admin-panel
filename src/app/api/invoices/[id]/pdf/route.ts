@@ -1,39 +1,35 @@
 import { API_INVOICES } from "@/lib/apiEndPoints";
-import { withAuthProxy } from "@/lib/helpers/axios/withAuthProxy";
 import { nextErrorResponse } from "@/lib/helpers/axios/nextErrorResponse";
+import { withAuthProxy } from "@/lib/helpers/axios/withAuthProxy";
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-
-    if (!token) {
-      return NextResponse.json(
-        { success: false, message: "Unauthorized" },
-        { status: 401 }
-      );
-    }
-
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}${API_INVOICES}/${params.id}/pdf/`, {
+    const response = await withAuthProxy({
+      url: `${process.env.NEXT_PUBLIC_API_BASE_URL}${API_INVOICES}/${id}/pdf`,
       method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      responseType: "arraybuffer",
     });
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch PDF: ${response.statusText}`);
+    // ✅ handle both axios-response and data-only return
+    const binaryData = response?.data ?? response;
+
+    if (!binaryData) {
+      throw new Error("PDF binary data not received");
     }
 
-    const blob = await response.blob();
-    const headers = new Headers();
-    headers.set("Content-Type", "application/pdf");
-    headers.set("Content-Disposition", `attachment; filename="invoice-${params.id}.pdf"`);
-
-    return new NextResponse(blob, { status: 200, statusText: "OK", headers });
-
+    return new NextResponse(Buffer.from(binaryData), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="invoice-${id}.pdf"`,
+      },
+    });
   } catch (err: any) {
     return nextErrorResponse(err);
   }

@@ -3,7 +3,8 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { nextErrorResponse } from "@/lib/helpers/axios/nextErrorResponse";
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get("access_token")?.value;
@@ -16,7 +17,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     }
 
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-    const response = await fetch(`${baseUrl}${API_PAYMENTS}${params.id}/pdf/`, {
+    const response = await fetch(`${baseUrl}${API_PAYMENTS}${id}/pdf/`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -32,7 +33,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     return new NextResponse(blob, {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="payment-${params.id}.pdf"`,
+        "Content-Disposition": `attachment; filename="payment-${id}.pdf"`,
       },
     });
   } catch (err: any) {

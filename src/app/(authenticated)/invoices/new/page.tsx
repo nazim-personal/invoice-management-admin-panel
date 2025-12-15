@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { handleApiError } from "@/lib/helpers/axios/errorHandler";
 import { postRequest } from "@/lib/helpers/axios/RequestService";
-import { generateInvoicePDF } from "@/lib/helpers/miscellaneous";
+
 import { CustomerDataTypes } from "@/lib/types/customers";
 import { InvoiceApiResponseTypes, InvoiceDataTypes, InvoiceItem } from "@/lib/types/invoices";
 import {
@@ -194,24 +194,32 @@ export default function NewInvoicePage() {
     }
 
     const response = await handleSaveInvoice();
-    if (response?.success) {
-      await generateInvoicePDF({
-        invoiceNumber: 'IBV', // dynamic
-        date: new Date().toISOString().split("T")[0],
-        dueDate: dueDate,
-        customer: selectedCustomer as CustomerDataTypes,
-        items,
-        // total,
-        // amountDue,
-        subtotal,
-        // tax,
-        discount,
-        status: "paid",
-        // shipping: 123,
-        notes: "Thank you for your business!"
-        // taxAmount,
-        // amountPaid
-      });
+    if (response?.success && response.data?.results?.id) {
+      try {
+        const invoiceId = response.data.results.id;
+        const pdfResponse = await fetch(`/api/invoices/${invoiceId}/pdf`);
+
+        if (!pdfResponse.ok) {
+          throw new Error("Failed to generate PDF");
+        }
+
+        const blob = await pdfResponse.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `invoice-${response.data.results.invoice_number}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } catch (error) {
+        console.error("PDF download error:", error);
+        toast({
+          title: "PDF Error",
+          description: "Failed to download invoice PDF.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
