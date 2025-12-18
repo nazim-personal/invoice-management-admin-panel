@@ -36,7 +36,8 @@ Subtotal: ₹${formatWithThousands(invoice.subtotal_amount)}
 Discount: ₹${formatWithThousands(invoice.discount_amount)}
 Tax (${invoice.tax_percent}%): ₹${formatWithThousands(invoice.tax_amount)}
 Total: ₹${formatWithThousands(invoice.total_amount)}
-Status: ${invoice.status}
-Due Date: ${formatDate(invoice.due_date)}
+Amount Paid: ₹${formatWithThousands(invoice.amount_paid)}
+*Amount Due: ₹${formatWithThousands(invoice.due_amount)}*
+*Due Date: ${formatDate(invoice.due_date)}*
 Thank you for your business!`;
 }
