@@ -38,6 +38,7 @@ import {
   Pencil,
   Trash2,
   IndianRupee,
+  RotateCcw,
 } from "lucide-react";
 import { ProductForm } from "./product-form";
 import {
@@ -52,6 +53,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
@@ -59,7 +61,7 @@ import { useEffect, useState } from "react";
 import { MetaTypes } from "@/lib/types/api";
 import { useDebounce } from "@/hooks/useDebounce";
 import { ProductDataTypes, ProductsApiResponseTypes } from "@/lib/types/products";
-import { getRequest, deleteRequest } from "@/lib/helpers/axios/RequestService";
+import { getRequest, deleteRequest, postRequest } from "@/lib/helpers/axios/RequestService";
 import { handleApiError } from "@/lib/helpers/axios/errorHandler";
 import { ProductSkeleton } from "./product-skeleton";
 import { DeletedResponse } from "@/lib/types/customers";
@@ -77,6 +79,7 @@ export function ProductClient() {
   const [selectedProduct, setSelectedProduct] = useState<ProductDataTypes | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [activeTab, setActiveTab] = useState("");
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [meta, setMeta] = useState<MetaTypes>({
     page: 1,
@@ -105,6 +108,7 @@ export function ProductClient() {
           page: currentPage,
           limit: rowsPerPage,
           q: query || undefined,
+          deleted: activeTab === "Deleted" ? true : undefined,
         },
       });
       setProducts(response.data.results || []);
@@ -123,7 +127,13 @@ export function ProductClient() {
 
   useEffect(() => {
     getProducts();
-  }, [currentPage, rowsPerPage]);
+  }, [currentPage, rowsPerPage, activeTab]);
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    setCurrentPage(1);
+    setSelectedProductIds([]);
+  };
 
   const handleDelete = async (productId: string) => {
     try {
@@ -185,6 +195,66 @@ export function ProductClient() {
       });
     }
   }
+
+  const handleRestore = async (productId: string) => {
+    try {
+      const response: ProductsApiResponseTypes<ProductDataTypes> = await postRequest({
+        url: `/api/products/bulk-restore`,
+        body: { ids: [productId] },
+      });
+      toast({
+        title: "Success",
+        description: "Product restored successfully",
+        variant: "success",
+      });
+      setProducts(products.filter((product) => product.id !== productId));
+      setMeta((prev) => {
+        const newTotal = prev.total - 1;
+        const newTotalPages = Math.ceil(newTotal / rowsPerPage);
+        const newPage = currentPage > newTotalPages ? newTotalPages : currentPage;
+        setCurrentPage(newPage > 0 ? newPage : 1);
+        return { ...prev, total: newTotal };
+      });
+    } catch (err: any) {
+      const parsed = handleApiError(err);
+      toast({
+        title: parsed.title,
+        description: parsed.description,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleBulkRestore = async () => {
+    try {
+      const response: ProductsApiResponseTypes<ProductDataTypes> = await postRequest({
+        url: "/api/products/bulk-restore",
+        body: { ids: selectedProductIds },
+      });
+      toast({
+        title: "Success",
+        description: "Products restored successfully",
+        variant: "success",
+      });
+      const remainingProducts = products.filter((p) => !selectedProductIds.includes(p.id));
+      setProducts(remainingProducts);
+      setSelectedProductIds([]);
+      setMeta((prev) => {
+        const newTotal = prev.total - selectedProductIds.length;
+        const newTotalPages = Math.ceil(newTotal / rowsPerPage);
+        const newPage = currentPage > newTotalPages ? newTotalPages : currentPage;
+        setCurrentPage(newPage > 0 ? newPage : 1);
+        return { ...prev, total: newTotal };
+      });
+    } catch (err: any) {
+      const parsed = handleApiError(err);
+      toast({
+        title: parsed.title,
+        description: parsed.description,
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleSelectAll = (checked: boolean | 'indeterminate') => {
     if (checked === true) {
@@ -265,30 +335,41 @@ export function ProductClient() {
             />
           </div>
           {selectedProductIds.length > 0 && (
-            <Can permission="products.delete">
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete ({selectedProductIds.length})
+            <>
+              {activeTab === "Deleted" ? (
+                <Can permission="products.delete">
+                  <Button variant="outline" size="sm" onClick={handleBulkRestore} className="text-green-600 hover:text-green-700 border-green-200 hover:border-green-300 hover:bg-green-50">
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    Restore ({selectedProductIds.length})
                   </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This action cannot be undone. This will permanently delete the selected products.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleBulkDelete}>
-                      Continue
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </Can>
+                </Can>
+              ) : (
+                <Can permission="products.delete">
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete ({selectedProductIds.length})
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action cannot be undone. This will permanently delete the selected products.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleBulkDelete}>
+                          Continue
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </Can>
+              )}
+            </>
           )}
         </div>
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
@@ -315,186 +396,208 @@ export function ProductClient() {
           </DialogContent>
         </Dialog>
       </div>
-      <Can permission="products.list" fallback={<div className="p-8 text-center text-muted-foreground">You do not have permission to view products.</div>}>
-        <Card className="mt-4">
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">
-                    <Checkbox
-                      checked={selectAllCheckedState}
-                      onCheckedChange={handleSelectAll}
-                      aria-label="Select All"
-                    />
-                  </TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead className="hidden md:table-cell">Description</TableHead>
-                  <TableHead>Price</TableHead>
-                  <TableHead>Stock</TableHead>
-                  <TableHead className="hidden md:table-cell">Last Updated</TableHead>
-                  <TableHead>
-                    <span className="sr-only">Actions</span>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  Array.from({ length: rowsPerPage }).map((_, i) => <ProductSkeleton key={i} />)
-                ) : products.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                      No products found.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  products.map((product) => (
-                    <TableRow
-                      key={product.id}
-                      data-state={selectedProductIds.includes(product.id) ? "selected" : ""}
-                    >
-                      <TableCell className="w-12" onClick={(e) => e.stopPropagation()}>
+      <Tabs defaultValue="" onValueChange={handleTabChange}>
+        <div className="flex items-center justify-between gap-4 mt-4">
+          <TabsList>
+            <TabsTrigger value="">All</TabsTrigger>
+            <TabsTrigger value="Deleted">Deleted</TabsTrigger>
+          </TabsList>
+        </div>
+        <TabsContent value={activeTab}>
+          <Can permission="products.list" fallback={<div className="p-8 text-center text-muted-foreground">You do not have permission to view products.</div>}>
+            <Card className="mt-4">
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12">
                         <Checkbox
-                          checked={selectedProductIds.includes(product.id)}
-                          onCheckedChange={(checked) => handleSelectOne(product.id, !!checked)}
-                          aria-label="Select row"
+                          checked={selectAllCheckedState}
+                          onCheckedChange={handleSelectAll}
+                          aria-label="Select All"
                         />
-                      </TableCell>
-                      <Can permission="products.view">
-                        <TableCell className="font-medium cursor-pointer" onClick={() => router.push(`/products/${product.id}`)}>
-                          {product.name}
-                        </TableCell>
-                      </Can>
-                      <Can permission="products.view">
-                        <TableCell className="hidden md:table-cell max-w-xs truncate cursor-pointer" onClick={() => router.push(`/products/${product.id}`)}>
-                          {product.description || "-"}
-                        </TableCell>
-                      </Can>
-                      <Can permission="products.view">
-                        <TableCell className="cursor-pointer" onClick={() => router.push(`/products/${product.id}`)}>
-                          <div className="flex items-center"><IndianRupee className="h-3 w-3 mr-0" />{formatWithThousands(product.price, true)}</div>
-                        </TableCell>
-                      </Can>
-                      <Can permission="products.view">
-                        <TableCell className="cursor-pointer" onClick={() => router.push(`/products/${product.id}`)}>
-                          <Badge variant={product.stock > 10 ? "secondary" : "destructive"}>
-                            {product.stock}
-                          </Badge>
-                        </TableCell>
-                      </Can>
-                      <Can permission="products.view">
-                        <TableCell className="hidden md:table-cell cursor-pointer" onClick={() => router.push(`/products/${product.id}`)}>
-                          {formatDate(product.updated_at || product.created_at)}
-                        </TableCell>
-                      </Can>
-                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button aria-haspopup="true" size="icon" variant="ghost">
-                              <MoreHorizontal className="h-4 w-4" />
-                              <span className="sr-only">Toggle menu</span>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <Can permission="products.view">
-                              <DropdownMenuItem onSelect={() => router.push(`/products/${product.id}`)}>
-                                <Eye className="mr-2 h-4 w-4" />
-                                View Details
-                              </DropdownMenuItem>
-                            </Can>
-                            <Can permission="products.update">
-                              <DropdownMenuItem onSelect={() => handleEdit(product)}>
-                                <Pencil className="mr-2 h-4 w-4" />
-                                Edit Product
-                              </DropdownMenuItem>
-                            </Can>
-                            <Can permission="products.delete">
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <DropdownMenuItem
-                                    className="text-destructive"
-                                    onSelect={(e) => e.preventDefault()}
-                                  >
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Delete Product
-                                  </DropdownMenuItem>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      This action cannot be undone. This will permanently delete this product.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDelete(product.id)}>
-                                      Continue
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </Can>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
+                      </TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead className="hidden md:table-cell">Description</TableHead>
+                      <TableHead>Price</TableHead>
+                      <TableHead>Stock</TableHead>
+                      <TableHead className="hidden md:table-cell">Last Updated</TableHead>
+                      <TableHead>
+                        <span className="sr-only">Actions</span>
+                      </TableHead>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-          <CardFooter className="flex items-center justify-between w-full border-t pt-4">
-            <div className="text-xs text-muted-foreground">
-              {selectedProductIds.length > 0
-                ? `${selectedProductIds.length} of ${products.length} product(s) selected.`
-                : `Showing ${startProduct}-${endProduct} of ${meta.total} products`}
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">Rows per page</span>
-                <Select value={String(rowsPerPage)} onValueChange={handleRowsPerPageChange}>
-                  <SelectTrigger className="h-8 w-[70px]">
-                    <SelectValue placeholder={String(rowsPerPage)} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="10">10</SelectItem>
-                    <SelectItem value="30">30</SelectItem>
-                    <SelectItem value="50">50</SelectItem>
-                    <SelectItem value="100">100</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="text-xs text-muted-foreground">
-                Page {currentPage} of {totalPages}
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={handlePreviousPage}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  <span className="sr-only">Previous page</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={handleNextPage}
-                  disabled={currentPage === totalPages}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                  <span className="sr-only">Next page</span>
-                </Button>
-              </div>
-            </div>
-          </CardFooter>
-        </Card>
-      </Can>
+                  </TableHeader>
+                  <TableBody>
+                    {isLoading ? (
+                      Array.from({ length: rowsPerPage }).map((_, i) => <ProductSkeleton key={i} />)
+                    ) : products.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                          No products found.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      products.map((product) => (
+                        <TableRow
+                          key={product.id}
+                          data-state={selectedProductIds.includes(product.id) ? "selected" : ""}
+                        >
+                          <TableCell className="w-12" onClick={(e) => e.stopPropagation()}>
+                            <Checkbox
+                              checked={selectedProductIds.includes(product.id)}
+                              onCheckedChange={(checked) => handleSelectOne(product.id, !!checked)}
+                              aria-label="Select row"
+                            />
+                          </TableCell>
+                          <Can permission="products.view">
+                            <TableCell className="font-medium cursor-pointer" onClick={() => router.push(`/products/${product.id}`)}>
+                              {product.name}
+                            </TableCell>
+                          </Can>
+                          <Can permission="products.view">
+                            <TableCell className="hidden md:table-cell max-w-xs truncate cursor-pointer" onClick={() => router.push(`/products/${product.id}`)}>
+                              {product.description || "-"}
+                            </TableCell>
+                          </Can>
+                          <Can permission="products.view">
+                            <TableCell className="cursor-pointer" onClick={() => router.push(`/products/${product.id}`)}>
+                              <div className="flex items-center"><IndianRupee className="h-3 w-3 mr-0" />{formatWithThousands(product.price, true)}</div>
+                            </TableCell>
+                          </Can>
+                          <Can permission="products.view">
+                            <TableCell className="cursor-pointer" onClick={() => router.push(`/products/${product.id}`)}>
+                              <Badge variant={product.stock > 10 ? "secondary" : "destructive"}>
+                                {product.stock}
+                              </Badge>
+                            </TableCell>
+                          </Can>
+                          <Can permission="products.view">
+                            <TableCell className="hidden md:table-cell cursor-pointer" onClick={() => router.push(`/products/${product.id}`)}>
+                              {formatDate(product.updated_at || product.created_at)}
+                            </TableCell>
+                          </Can>
+                          <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button aria-haspopup="true" size="icon" variant="ghost">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                  <span className="sr-only">Toggle menu</span>
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <Can permission="products.view">
+                                  <DropdownMenuItem onSelect={() => router.push(`/products/${product.id}`)}>
+                                    <Eye className="mr-2 h-4 w-4" />
+                                    View Details
+                                  </DropdownMenuItem>
+                                </Can>
+                                <Can permission="products.update">
+                                  <DropdownMenuItem onSelect={() => handleEdit(product)}>
+                                    <Pencil className="mr-2 h-4 w-4" />
+                                    Edit Product
+                                  </DropdownMenuItem>
+                                </Can>
+                                {activeTab === "Deleted" ? (
+                                  <Can permission="products.delete">
+                                    <DropdownMenuItem
+                                      className="text-green-600"
+                                      onSelect={() => handleRestore(product.id)}
+                                    >
+                                      <RotateCcw className="mr-2 h-4 w-4" />
+                                      Restore Product
+                                    </DropdownMenuItem>
+                                  </Can>
+                                ) : (
+                                  <Can permission="products.delete">
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <DropdownMenuItem
+                                          className="text-destructive"
+                                          onSelect={(e) => e.preventDefault()}
+                                        >
+                                          <Trash2 className="mr-2 h-4 w-4" />
+                                          Delete Product
+                                        </DropdownMenuItem>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                            This action cannot be undone. This will permanently delete this product.
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                          <AlertDialogAction onClick={() => handleDelete(product.id)}>
+                                            Continue
+                                          </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+                                  </Can>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+              <CardFooter className="flex items-center justify-between w-full border-t pt-4">
+                <div className="text-xs text-muted-foreground">
+                  {selectedProductIds.length > 0
+                    ? `${selectedProductIds.length} of ${products.length} product(s) selected.`
+                    : `Showing ${startProduct}-${endProduct} of ${meta.total} products`}
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">Rows per page</span>
+                    <Select value={String(rowsPerPage)} onValueChange={handleRowsPerPageChange}>
+                      <SelectTrigger className="h-8 w-[70px]">
+                        <SelectValue placeholder={String(rowsPerPage)} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="30">30</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Page {currentPage} of {totalPages}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={handlePreviousPage}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      <span className="sr-only">Previous page</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={handleNextPage}
+                      disabled={currentPage === totalPages}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                      <span className="sr-only">Next page</span>
+                    </Button>
+                  </div>
+                </div>
+              </CardFooter>
+            </Card>
+          </Can>
+        </TabsContent>
+      </Tabs>
     </>
   );
 }

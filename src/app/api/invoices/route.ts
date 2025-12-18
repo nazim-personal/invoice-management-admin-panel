@@ -3,6 +3,7 @@ import { API_INVOICES, API_INVOICES_DELETE } from "@/constants/apis";
 import { nextErrorResponse } from "@/lib/helpers/axios/errorHandler";
 import { withAuthProxy } from "@/lib/helpers/axios/withAuthProxy";
 import { InvoiceApiResponseTypes } from "@/lib/types/invoices";
+import { d } from "@genkit-ai/googleai";
 import { NextResponse } from "next/server";
 
 // GET /api/invoices
@@ -14,6 +15,7 @@ export async function GET(req: Request) {
     const q = searchParams.get("q") || undefined;
     const status = searchParams.get("status") || undefined;
     const product_id = searchParams.get("product_id") || undefined;
+    const deleted = searchParams.get("deleted") || undefined;
 
     const response = await withAuthProxy<InvoiceApiResponseTypes>({
       url: API_INVOICES,
@@ -23,6 +25,7 @@ export async function GET(req: Request) {
         limit,
         ...(q ? { q } : {}),
         ...(status ? { status } : {}),
+        ...(deleted ? { deleted } : {}),
         ...(product_id ? { product_id } : {}),
       },
     });

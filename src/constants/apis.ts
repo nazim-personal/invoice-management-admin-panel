@@ -16,11 +16,14 @@ export const API_DASHBOARD_SLAES_PERFORMANCE = '/dashboard/sales-performance'
 //Customers APIs
 export const API_CUSTOMER = '/customers'
 export const API_CUSTOMER_DELETE = '/customers/bulk-delete'
+export const API_CUSTOMER_RESTORED = '/customers/bulk-restore'
 
 //Products APIs
 export const API_PRODUCTS = '/products'
 export const API_PRODUCTS_DELETE = '/products/bulk-delete'
+export const API_PRODUCT_RESTORED = '/products/bulk-restore'
 
 //Invoices APIs
 export const API_INVOICES = '/invoices'
 export const API_INVOICES_DELETE = '/invoices/bulk-delete'
+export const API_INVOICE_RESTORED = '/invoices/bulk-restore'

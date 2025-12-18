@@ -48,7 +48,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { deleteRequest, getRequest } from "@/lib/helpers/axios/RequestService";
+import { deleteRequest, getRequest, postRequest, restoreRequest } from "@/lib/helpers/axios/RequestService";
 import { CustomerApiResponseTypes, CustomerDataTypes, DeletedResponse } from "@/lib/types/customers";
 import {
   ChevronLeft,
@@ -58,6 +58,7 @@ import {
   MoreHorizontal,
   Pencil,
   PlusCircle,
+  RotateCcw,
   Search,
   Trash2,
 } from "lucide-react";
@@ -112,7 +113,8 @@ export function CustomerClient() {
           page: currentPage,
           limit: rowsPerPage,
           q: query || undefined,
-          status: activeTab !== "" ? activeTab : undefined,
+          status: activeTab !== "" && activeTab !== "Deleted" ? activeTab : undefined,
+          deleted: activeTab === "Deleted" ? true : undefined,
         },
       });
       setCustomers(response.data.results || []);
@@ -168,6 +170,36 @@ export function CustomerClient() {
     }
   };
 
+  const handleRestore = async (customerId: string) => {
+    try {
+      const response: CustomerApiResponseTypes<CustomerDataTypes> = await postRequest({
+        url: `/api/customers/bulk-restore`,
+        body: { ids: [customerId] },
+      });
+      toast({
+        title: "Success",
+        description: response?.message,
+        variant: "success",
+      });
+      setCustomers(customers.filter((customer) => customer.id !== customerId));
+      setMeta((prev) => {
+        const newTotal = prev.total - 1;
+        const newTotalPages = Math.ceil(newTotal / rowsPerPage);
+        const newPage = currentPage > newTotalPages ? newTotalPages : currentPage;
+        setCurrentPage(newPage > 0 ? newPage : 1);
+        return { ...prev, total: newTotal };
+      });
+    } catch (err: any) {
+      const parsed = handleApiError(err);
+      toast({
+        title: parsed.title,
+        description: parsed.description,
+        variant: "destructive",
+      });
+    }
+  };
+
+
   const handleBulkDelete = async () => {
     try {
       const deleteCustomers: CustomerApiResponseTypes<DeletedResponse> = await deleteRequest({
@@ -185,6 +217,37 @@ export function CustomerClient() {
       setSelectedCustomerIds([]);
       setMeta((prev) => {
         const newTotal = prev.total - deleted_count;
+        const newTotalPages = Math.ceil(newTotal / rowsPerPage);
+        const newPage = currentPage > newTotalPages ? newTotalPages : currentPage;
+        setCurrentPage(newPage > 0 ? newPage : 1);
+        return { ...prev, total: newTotal };
+      });
+    } catch (err: any) {
+      const parsed = handleApiError(err);
+      toast({
+        title: parsed.title,
+        description: parsed.description,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleBulkRestore = async () => {
+    try {
+      const response: CustomerApiResponseTypes<CustomerDataTypes> = await postRequest({
+        url: "/api/customers/bulk-restore",
+        body: { ids: selectedCustomerIds },
+      });
+      toast({
+        title: "Success",
+        description: "Customers restored successfully",
+        variant: "success",
+      });
+      const remainingCustomers = customers.filter((c) => !selectedCustomerIds.includes(c.id ?? ""));
+      setCustomers(remainingCustomers);
+      setSelectedCustomerIds([]);
+      setMeta((prev) => {
+        const newTotal = prev.total - selectedCustomerIds.length;
         const newTotalPages = Math.ceil(newTotal / rowsPerPage);
         const newPage = currentPage > newTotalPages ? newTotalPages : currentPage;
         setCurrentPage(newPage > 0 ? newPage : 1);
@@ -285,31 +348,45 @@ export function CustomerClient() {
             <TabsTrigger value="Pending">Pending</TabsTrigger>
             <TabsTrigger value="Paid">Paid</TabsTrigger>
             <TabsTrigger value="Overdue">Overdue</TabsTrigger>
+            <TabsTrigger value="Deleted">Deleted</TabsTrigger>
           </TabsList>
           <div className="flex items-center gap-2">
             {selectedCustomerIds.length > 0 && (
-              <Can permission="customers.delete">
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete ({selectedCustomerIds.length})
+              <>
+                {activeTab === "Deleted" ? (
+                  <Can permission="customers.delete">
+                    <Button variant="outline" size="sm" onClick={handleBulkRestore} className="text-green-600 hover:text-green-700 border-green-200 hover:border-green-300 hover:bg-green-50">
+                      <RotateCcw className="mr-2 h-4 w-4" />
+                      Restore ({selectedCustomerIds.length})
                     </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete the selected customers and all their associated data.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleBulkDelete}>Continue</AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </Can>
+                  </Can>
+                ) : (
+                  <Can permission="customers.delete">
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete ({selectedCustomerIds.length})
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete the selected customers.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleBulkDelete}>
+                            Continue
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </Can>
+                )}
+              </>
             )}
             <div className="relative flex-1 md:grow-0">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -456,33 +533,45 @@ export function CustomerClient() {
                                 Get AI Insights
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <Can permission="customers.delete">
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <DropdownMenuItem
-                                      className="text-destructive"
-                                      onSelect={(e) => e.preventDefault()}
-                                    >
-                                      <Trash2 className="mr-2 h-4 w-4" />
-                                      Delete Customer
-                                    </DropdownMenuItem>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        This action cannot be undone. This will permanently delete this customer and all associated invoices.
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                      <AlertDialogAction onClick={() => handleDelete(customer.id)}>
-                                        Continue
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
-                              </Can>
+                              {activeTab === "Deleted" ? (
+                                <Can permission="customers.delete">
+                                  <DropdownMenuItem
+                                    className="text-green-600"
+                                    onSelect={() => handleRestore(customer.id)}
+                                  >
+                                    <RotateCcw className="mr-2 h-4 w-4" />
+                                    Restore Customer
+                                  </DropdownMenuItem>
+                                </Can>
+                              ) : (
+                                <Can permission="customers.delete">
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <DropdownMenuItem
+                                        className="text-destructive"
+                                        onSelect={(e) => e.preventDefault()}
+                                      >
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Delete Customer
+                                      </DropdownMenuItem>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          This action cannot be undone. This will permanently delete this customer and all associated invoices.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => handleDelete(customer.id)}>
+                                          Continue
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                </Can>
+                              )}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>

@@ -24,8 +24,8 @@ import { useToast } from "@/hooks/use-toast";
 import { getRequest } from "@/lib/helpers/axios/RequestService";
 import { handleApiError } from "@/lib/helpers/axios/errorHandler";
 import { formatDate } from "@/lib/helpers/forms";
-import { formatWithThousands } from "@/lib/helpers/miscellaneous";
 import { InvoiceDetailsApiResponseType, InvoiceDetailsType } from "@/lib/types/invoices";
+import { formatWithThousands, generateWhatsAppMessage } from "@/lib/helpers/miscellaneous";
 import { ChevronLeft, Download, IndianRupee, Minus, Pencil, FileText, Users, CircleDollarSign, Package } from "lucide-react";
 import { Activity, ActivityType, getActivityType, formatActivityTitle, formatActivityDescription } from "@/lib/types/activity";
 import { ApiResponse } from "@/lib/types/api";
@@ -135,7 +135,7 @@ export default function ViewInvoicePage() {
     }
 
     const phoneNumber = customer.phone.replace(/[^0-9]/g, "");
-    const message = `Hello ${customer.name},\n\nHere is your invoice ${invoice.invoice_number} for ₹${invoice.total_amount}.\nAmount Due: ₹${invoice.due_amount}\n\nThank you for your business!`;
+    const message = generateWhatsAppMessage(invoice);
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
 
     window.open(whatsappUrl, "_blank");
@@ -371,7 +371,7 @@ export default function ViewInvoicePage() {
               <span className="inline-flex items-center gap-0.5">
                 <Minus className="h-3.5 w-3.5" />
                 <IndianRupee className="h-3 w-3" />
-                {formatWithThousands(invoice?.payment?.amount ?? 0)}
+                {formatWithThousands(invoice?.amount_paid ?? 0)}
               </span>
             </div>
             <div className="flex justify-between font-semibold text-destructive text-md border-t pt-2">

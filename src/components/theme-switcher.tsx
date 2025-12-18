@@ -15,19 +15,18 @@ export function ThemeSwitcher() {
                     key={theme.name}
                     onClick={() => setTheme(theme.name)}
                     className={cn(
-                        "flex h-9 w-9 items-center justify-center rounded-full border-2 text-xs",
+                        "flex h-9 w-9 items-center justify-center rounded-full border-2 text-xs transition-all",
                         currentTheme === theme.name
                             ? "border-primary"
-                            : "border-transparent"
+                            : "border-muted-foreground/20 hover:border-muted-foreground/40"
                     )}
-                    style={
-                        {
-                            "--theme-primary": `hsl(${theme.activeColor})`,
-                        } as React.CSSProperties
-                    }
+                    title={theme.label}
                 >
                     <span
-                        className="flex h-6 w-6 items-center justify-center rounded-full bg-[hsl(var(--theme-primary))]"
+                        className="flex h-6 w-6 items-center justify-center rounded-full"
+                        style={{
+                            backgroundColor: `hsl(${theme.activeColor})`,
+                        }}
                     >
                         {currentTheme === theme.name && (
                             <Check className="h-4 w-4 text-white" />

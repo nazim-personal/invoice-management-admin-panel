@@ -1,5 +1,5 @@
 // app/api/customers/route.ts
-import { API_CUSTOMER, API_CUSTOMER_DELETE } from "@/constants/apis";
+import { API_CUSTOMER, API_CUSTOMER_DELETE, API_CUSTOMER_RESTORED } from "@/constants/apis";
 import { nextErrorResponse } from "@/lib/helpers/axios/errorHandler";
 import { withAuthProxy } from "@/lib/helpers/axios/withAuthProxy";
 import { CustomerApiResponseTypes } from "@/lib/types/customers";
@@ -13,6 +13,7 @@ export async function GET(req: Request) {
     const limit = searchParams.get("limit") || "10";
     const q = searchParams.get("q") || undefined;
     const status = searchParams.get("status") || undefined;
+    const deleted = searchParams.get("deleted") || undefined;
 
     const response = await withAuthProxy<CustomerApiResponseTypes>({
       url: API_CUSTOMER,
@@ -22,6 +23,7 @@ export async function GET(req: Request) {
         limit,
         ...(q ? { q } : {}),
         ...(status ? { status } : {}),
+        ...(deleted ? { deleted } : {}),
       },
     });
     return NextResponse.json(response);

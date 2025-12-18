@@ -120,13 +120,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const [currentTheme, setCurrentTheme] = useState("blue");
-
-    useEffect(() => {
-        const savedTheme = localStorage.getItem("app-theme");
-        if (savedTheme) {
-            setTheme(savedTheme);
-        }
-    }, []);
+    const [isInitialized, setIsInitialized] = useState(false);
 
     const setTheme = (themeName: string) => {
         const theme = themes.find((t) => t.name === themeName);
@@ -144,8 +138,20 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         });
     };
 
+    // Initialize theme on mount
+    useEffect(() => {
+        const savedTheme = localStorage.getItem("app-theme");
+        const themeToApply = savedTheme || "blue";
+
+        // Apply the theme immediately
+        setTheme(themeToApply);
+        setIsInitialized(true);
+    }, []);
+
     // Listen for dark mode changes to update variables if needed
     useEffect(() => {
+        if (!isInitialized) return;
+
         const observer = new MutationObserver((mutations) => {
             mutations.forEach((mutation) => {
                 if (
@@ -153,7 +159,16 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
                     mutation.attributeName === "class"
                 ) {
                     // Re-apply current theme to ensure correct mode variables are used
-                    setTheme(currentTheme);
+                    const theme = themes.find((t) => t.name === currentTheme);
+                    if (!theme) return;
+
+                    const root = document.documentElement;
+                    const isDark = root.classList.contains("dark");
+                    const cssVars = isDark ? theme.cssVars.dark : theme.cssVars.light;
+
+                    Object.entries(cssVars).forEach(([key, value]) => {
+                        root.style.setProperty(key, value);
+                    });
                 }
             });
         });
@@ -164,7 +179,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         });
 
         return () => observer.disconnect();
-    }, [currentTheme]);
+    }, [currentTheme, isInitialized]);
 
     return (
         <ThemeContext.Provider value={{ currentTheme, setTheme, themes }}>

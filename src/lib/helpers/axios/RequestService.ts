@@ -129,3 +129,7 @@ export async function deleteRequest<T = any>({ url, body }: CustomRequestType): 
   const res = await axiosInstance.delete(url, { data: body });
   return handleResponse<T>(res);
 }
+export async function restoreRequest<T = any>({ url, body }: CustomRequestType): Promise<T> {
+  const res = await axiosInstance.post(url, body);
+  return handleResponse<T>(res);
+}

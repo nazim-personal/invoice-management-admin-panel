@@ -7,15 +7,16 @@ export interface InvoiceDataTypes {
   invoice_number: string;
   created_at: string;
   due_date: string;
-  status: "Pending" | "Paid" | "Overdue" | string;
+  status: "Pending" | "Paid" | "Partially Paid" | "Overdue" | string;
   tax_percent: number;
   tax_amount: number;
   discount_amount: number;
   subtotal_amount: number;
   total_amount: number;
-  paid_amount: number;
+  amount_paid: number;
   due_amount: number;
   updated_at: string | null;
+  deleted_at?: string | null;
   customer: {
     id: string;
     name: string;

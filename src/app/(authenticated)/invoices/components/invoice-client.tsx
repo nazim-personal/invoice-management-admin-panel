@@ -66,12 +66,13 @@ import { useEffect, useState } from "react";
 import { DeletedResponse, InvoiceApiResponseTypes, InvoiceDataTypes } from "@/lib/types/invoices";
 import { MetaTypes } from "@/lib/types/api";
 import { useDebounce } from "@/hooks/useDebounce";
-import { deleteRequest, getRequest, putRequest } from "@/lib/helpers/axios/RequestService";
+import { deleteRequest, getRequest, putRequest, postRequest } from "@/lib/helpers/axios/RequestService";
 import { handleApiError } from "@/lib/helpers/axios/errorHandler";
 import { capitalizeWords, formatDate } from "@/lib/helpers/forms";
 import { InvoiceSkeleton } from "./invoice-skeleton";
-import { formatWithThousands } from "@/lib/helpers/miscellaneous";
+import { formatWithThousands, generateWhatsAppMessage } from "@/lib/helpers/miscellaneous";
 import { Can } from "@/components/Can";
+import { RotateCcw } from "lucide-react";
 
 const WhatsAppIcon = () => (
   <svg
@@ -123,7 +124,8 @@ export function InvoiceClient() {
           page: currentPage,
           limit: rowsPerPage,
           q: query || undefined,
-          status: activeTab !== "all" ? activeTab : undefined,
+          status: activeTab !== "all" && activeTab !== "Deleted" ? activeTab : undefined,
+          deleted: activeTab === "Deleted" ? true : undefined,
         },
       });
       setInvoices(response.data.results || []);
@@ -137,6 +139,35 @@ export function InvoiceClient() {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleRestore = async (invoiceId: string) => {
+    try {
+      const response: InvoiceApiResponseTypes<InvoiceDataTypes> = await postRequest({
+        url: `/api/invoices/bulk-restore`,
+        body: { ids: [invoiceId] },
+      });
+      toast({
+        title: "Success",
+        description: "Invoice restored successfully",
+        variant: "success",
+      });
+      setInvoices(invoices.filter((invoice) => invoice.id !== invoiceId));
+      setMeta((prev) => {
+        const newTotal = prev.total - 1;
+        const newTotalPages = Math.ceil(newTotal / rowsPerPage);
+        const newPage = currentPage > newTotalPages ? newTotalPages : currentPage;
+        setCurrentPage(newPage > 0 ? newPage : 1);
+        return { ...prev, total: newTotal };
+      });
+    } catch (err: any) {
+      const parsed = handleApiError(err);
+      toast({
+        title: parsed.title,
+        description: parsed.description,
+        variant: "destructive",
+      });
     }
   };
 
@@ -210,6 +241,37 @@ export function InvoiceClient() {
     }
   };
 
+  const handleBulkRestore = async () => {
+    try {
+      const response: InvoiceApiResponseTypes<InvoiceDataTypes> = await postRequest({
+        url: "/api/invoices/bulk-restore",
+        body: { ids: selectedInvoiceIds },
+      });
+      toast({
+        title: "Success",
+        description: "Invoices restored successfully",
+        variant: "success",
+      });
+      const remainingInvoices = invoices.filter((i) => !selectedInvoiceIds.includes(i.id));
+      setInvoices(remainingInvoices);
+      setSelectedInvoiceIds([]);
+      setMeta((prev) => {
+        const newTotal = prev.total - selectedInvoiceIds.length;
+        const newTotalPages = Math.ceil(newTotal / rowsPerPage);
+        const newPage = currentPage > newTotalPages ? newTotalPages : currentPage;
+        setCurrentPage(newPage > 0 ? newPage : 1);
+        return { ...prev, total: newTotal };
+      });
+    } catch (err: any) {
+      const parsed = handleApiError(err);
+      toast({
+        title: parsed.title,
+        description: parsed.description,
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleBulkDelete = async () => {
     try {
       const deleteInvoices: InvoiceApiResponseTypes<DeletedResponse> = await deleteRequest({
@@ -242,26 +304,41 @@ export function InvoiceClient() {
     }
   };
 
-  const handleSendWhatsApp = (invoice: InvoiceDataTypes) => {
-    // const customer = invoice.customer;
-    // if (!customer?.phone) {
-    //   toast({
-    //     title: "Customer phone number not available",
-    //     description: `Could not send message for invoice ${invoice.invoiceNumber}.`,
-    //     variant: "destructive",
-    //   });
-    //   return;
-    // }
+  const handleSendWhatsApp = async (invoice: InvoiceDataTypes) => {
+    if (!invoice.customer?.phone) {
+      toast({
+        title: "Customer phone number not available",
+        description: `Could not send message for invoice ${invoice.invoice_number}.`,
+        variant: "destructive",
+      });
+      return;
+    }
 
-    // const phoneNumber = customer.phone.replace(/[^0-9]/g, "");
-    // const amountDue = invoice.total - invoice.amountPaid;
-    // const message = `Hello ${customer.name},\n\nHere is your invoice ${invoice.invoiceNumber} for ₹${invoice.total}.\nAmount Due: ₹${amountDue}\n\nThank you for your business!`;
-    // const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+    try {
+      // Fetch full invoice details to get items
+      const response = await getRequest({ url: `/api/invoices/${invoice.id}` });
+      const fullInvoice = (response as any).data.results;
 
-    // window.open(whatsappUrl, "_blank");
+      if (!fullInvoice) {
+        throw new Error("Failed to fetch invoice details");
+      }
+
+      const phoneNumber = invoice.customer.phone.replace(/[^0-9]/g, "");
+      const message = generateWhatsAppMessage(fullInvoice);
+      const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+
+      window.open(whatsappUrl, "_blank");
+    } catch (error) {
+      console.error("Error sending WhatsApp:", error);
+      toast({
+        title: "Error",
+        description: "Failed to prepare WhatsApp message",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleBulkSendWhatsApp = () => {
+  const handleBulkSendWhatsApp = async () => {
     const selectedInvoices = invoices.filter(invoice => selectedInvoiceIds.includes(invoice.id));
     if (selectedInvoices.length === 0) {
       toast({
@@ -271,16 +348,22 @@ export function InvoiceClient() {
       return;
     }
 
-    selectedInvoices.forEach(invoice => {
+    let sentCount = 0;
+    for (const invoice of selectedInvoices) {
       if (invoice.status !== 'Paid') {
-        handleSendWhatsApp(invoice);
+        await handleSendWhatsApp(invoice);
+        sentCount++;
+        // Add a small delay to avoid overwhelming the browser/API
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
-    });
+    }
 
-    toast({
-      title: "WhatsApp Messages Sent",
-      description: `Opened WhatsApp for due invoices. Please check your browser tabs.`,
-    });
+    if (sentCount > 0) {
+      toast({
+        title: "WhatsApp Messages Initiated",
+        description: `Attempted to open WhatsApp for ${sentCount} invoices. Please check your browser tabs/popups.`,
+      });
+    }
   };
 
   const handleSelectAll = (checked: boolean | 'indeterminate') => {
@@ -345,8 +428,10 @@ export function InvoiceClient() {
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
               <SelectItem value="Paid">Paid</SelectItem>
+              <SelectItem value="Partially Paid">Partially Paid</SelectItem>
               <SelectItem value="Pending">Pending</SelectItem>
               <SelectItem value="Overdue">Overdue</SelectItem>
+              <SelectItem value="Deleted">Deleted</SelectItem>
             </SelectContent>
           </Select>
           {selectedInvoiceIds.length > 0 && (
@@ -358,28 +443,35 @@ export function InvoiceClient() {
                 </Button>
               )}
               <Can permission="invoices.delete">
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete ({selectedInvoiceIds.length})
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete the selected invoices.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleBulkDelete}>
-                        Continue
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                {activeTab === "Deleted" ? (
+                  <Button variant="outline" size="sm" onClick={handleBulkRestore} className="text-green-600 hover:text-green-700 border-green-200 hover:border-green-300 hover:bg-green-50">
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    Restore ({selectedInvoiceIds.length})
+                  </Button>
+                ) : (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete ({selectedInvoiceIds.length})
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action cannot be undone. This will permanently delete the selected invoices.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleBulkDelete}>
+                          Continue
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
               </Can>
             </>
           )}
@@ -464,9 +556,11 @@ export function InvoiceClient() {
                               ? "default"
                               : invoice.status === "Pending"
                                 ? "secondary"
-                                : "destructive"
+                                : invoice.status === "Partially Paid"
+                                  ? "secondary" // You might want a different variant for Partially Paid
+                                  : "destructive"
                           }
-                          className="capitalize"
+                          className={invoice.status === "Partially Paid" ? "bg-yellow-100 text-yellow-800 hover:bg-yellow-100/80" : "capitalize"}
                         >
                           {invoice.status}
                         </Badge>
@@ -494,56 +588,70 @@ export function InvoiceClient() {
                                 View Details
                               </DropdownMenuItem>
                             </Can>
-                            <Can permission="invoices.update">
-                              <DropdownMenuItem onSelect={() => router.push(`/invoices/${invoice.id}/edit`)}>
-                                <Pencil className="mr-2 h-4 w-4" />
-                                Edit
-                              </DropdownMenuItem>
-                            </Can>
-                            {invoice.status !== 'Paid' && (
+                            {activeTab === "Deleted" ? (
+                              <Can permission="invoices.delete">
+                                <DropdownMenuItem
+                                  className="text-green-600"
+                                  onSelect={() => handleRestore(invoice.id)}
+                                >
+                                  <RotateCcw className="mr-2 h-4 w-4" />
+                                  Restore Invoice
+                                </DropdownMenuItem>
+                              </Can>
+                            ) : (
                               <>
-                                <Can permission="payments.create">
-                                  <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsPaid(invoice.id); }}>
-                                    <CircleDollarSign className="mr-2 h-4 w-4" />
-                                    Mark as Paid
+                                <Can permission="invoices.update">
+                                  <DropdownMenuItem onSelect={() => router.push(`/invoices/${invoice.id}/edit`)}>
+                                    <Pencil className="mr-2 h-4 w-4" />
+                                    Edit
                                   </DropdownMenuItem>
                                 </Can>
-                                <Can permission="invoices.view">
-                                  <DropdownMenuItem onSelect={() => handleSendWhatsApp(invoice)}>
-                                    <WhatsAppIcon />
-                                    Send WhatsApp
-                                  </DropdownMenuItem>
+                                {invoice.status !== 'Paid' && (
+                                  <>
+                                    <Can permission="payments.create">
+                                      <DropdownMenuItem onSelect={(e) => { e.stopPropagation(); handleMarkAsPaid(invoice.id); }}>
+                                        <CircleDollarSign className="mr-2 h-4 w-4" />
+                                        Mark as Paid
+                                      </DropdownMenuItem>
+                                    </Can>
+                                    <Can permission="invoices.view">
+                                      <DropdownMenuItem onSelect={() => handleSendWhatsApp(invoice)}>
+                                        <WhatsAppIcon />
+                                        Send WhatsApp
+                                      </DropdownMenuItem>
+                                    </Can>
+                                  </>
+                                )}
+                                <DropdownMenuSeparator />
+                                <Can permission="invoices.delete">
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <DropdownMenuItem
+                                        className="text-destructive"
+                                        onSelect={(e) => e.preventDefault()}
+                                      >
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Delete
+                                      </DropdownMenuItem>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          This action cannot be undone. This will permanently delete this invoice.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => handleDelete(invoice.id)}>
+                                          Continue
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
                                 </Can>
                               </>
                             )}
-                            <DropdownMenuSeparator />
-                            <Can permission="invoices.delete">
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <DropdownMenuItem
-                                    className="text-destructive"
-                                    onSelect={(e) => e.preventDefault()}
-                                  >
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Delete
-                                  </DropdownMenuItem>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      This action cannot be undone. This will permanently delete this invoice.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDelete(invoice.id)}>
-                                      Continue
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </Can>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -602,8 +710,8 @@ export function InvoiceClient() {
               </div>
             </div>
           </CardFooter>
-        </Card>
-      </Can>
-    </Tabs>
+        </Card >
+      </Can >
+    </Tabs >
   );
 }

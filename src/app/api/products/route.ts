@@ -12,6 +12,7 @@ export async function GET(req: Request) {
     const page = searchParams.get("page") || "1";
     const limit = searchParams.get("limit") || "10";
     const q = searchParams.get("q") || undefined;
+    const deleted = searchParams.get("deleted") || undefined;
 
     const response = await withAuthProxy<ProductsApiResponseTypes>({
       url: API_PRODUCTS,
@@ -20,6 +21,7 @@ export async function GET(req: Request) {
         page,
         limit,
         ...(q ? { q } : {}),
+        ...(deleted ? { deleted } : {}),
       },
     });
     return NextResponse.json(response);
