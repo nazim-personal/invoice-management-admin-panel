@@ -40,8 +40,9 @@ import { useEffect, useState } from "react";
 interface IPropsTypes {
     items: InvoiceItem[]
     setItems: React.Dispatch<React.SetStateAction<InvoiceItem[]>>
+    isDisabled?: boolean
 }
-export default function ProductsInvoice({ items, setItems }: IPropsTypes) {
+export default function ProductsInvoice({ items, setItems, isDisabled }: IPropsTypes) {
     const { toast } = useToast();
     const [products, setProducts] = useState<ProductDataTypes[]>([]);
     const [currentPage, setCurrentPage] = useState(1);
@@ -164,6 +165,7 @@ export default function ProductsInvoice({ items, setItems }: IPropsTypes) {
                                     <Input
                                         type="number"
                                         min="1"
+                                        disabled={isDisabled}
                                         value={item.quantity === 0 ? "" : item.quantity}
                                         onChange={(e) => {
                                             const val = e.target.value;
@@ -226,6 +228,7 @@ export default function ProductsInvoice({ items, setItems }: IPropsTypes) {
                                         size="icon"
                                         variant="ghost"
                                         onClick={() => handleRemoveItem(item.id)}
+                                        disabled={isDisabled}
                                     >
                                         <Trash className="h-4 w-4" />
                                     </Button>
@@ -245,6 +248,7 @@ export default function ProductsInvoice({ items, setItems }: IPropsTypes) {
                 <div className="mt-4 flex items-center gap-2">
                     <Select
                         value={productIdToAdd}
+                        disabled={isDisabled}
                         onValueChange={(value) => {
                             setProductIdToAdd(value);
                             const productToAdd = products.find((p) => p.id === value);

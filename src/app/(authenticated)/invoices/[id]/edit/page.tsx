@@ -59,6 +59,8 @@ export default function EditInvoicePage() {
 
   const amountDue = total - (amountPaid || 0);
 
+  const isPaid = invoice?.status === 'paid' || amountDue <= 0;
+
   const getInvoice = async (id: string) => {
     setIsLoading(true);
     try {
@@ -71,7 +73,7 @@ export default function EditInvoicePage() {
         setItems(invoice.items)
         setTax(invoice.tax_percent)
         setDiscount(invoice.discount_amount)
-        setAmountPaid(invoice?.payment?.amount ?? 0)
+        setAmountPaid(invoice?.amount_paid ?? 0)
         setSelectedCustomerId(invoice.customer.id)
         setDueDate(invoice.due_date)
       } else {
@@ -287,13 +289,13 @@ export default function EditInvoicePage() {
           <Button variant="outline" size="sm" onClick={handleDiscard}>
             Discard
           </Button>
-          <Button size="sm" onClick={handleSaveInvoice} loading={isLoading} disabled={items.length === 0 || !selectedCustomerId}>Save Invoice</Button>
+          <Button size="sm" onClick={handleSaveInvoice} loading={isLoading} disabled={items.length === 0 || !selectedCustomerId || isPaid}>Save Invoice</Button>
         </div>
       </div>
       <div className="grid gap-4 md:grid-cols-[1fr_250px] lg:grid-cols-3 lg:gap-8">
         <div className="grid auto-rows-max items-start gap-4 lg:col-span-2 lg:gap-8">
           <CustomersInvoice customers={customers} setCustomers={setCustomers} selectedCustomerId={selectedCustomerId} setSelectedCustomerId={setSelectedCustomerId} invoice_number={invoice?.invoice_number} isDisabled={true} />
-          <ProductsInvoice items={items} setItems={setItems} />
+          <ProductsInvoice items={items} setItems={setItems} isDisabled={isPaid} />
         </div>
         <div className="grid auto-rows-max items-start gap-4 lg:gap-8">
           <Card>
@@ -337,6 +339,7 @@ export default function EditInvoicePage() {
                 <Input
                   id="due-date"
                   type="date"
+                  disabled={isPaid}
                   value={dueDate || new Date().toISOString().split("T")[0]}
                   onChange={(e) => setDueDate(e.target.value)}
                   className="w-36"
@@ -382,6 +385,7 @@ export default function EditInvoicePage() {
                     }
                   }}
                   value={isNaN(amountPaid) ? "" : amountPaid}
+                  disabled={invoice?.status === "paid" || isPaid}
                   onBlur={(e) => {
                     let parsed = parseFloat(e.target.value);
                     if (isNaN(parsed) || parsed < 0) parsed = 0;
@@ -411,6 +415,7 @@ export default function EditInvoicePage() {
                   id="tax"
                   type="number"
                   min={0}
+                  disabled={isPaid}
                   value={isNaN(tax) ? "" : tax}
                   onChange={(e) => {
                     const val = e.target.value;
@@ -442,6 +447,7 @@ export default function EditInvoicePage() {
                   id="discount"
                   type="number"
                   min={0}
+                  disabled={isPaid}
                   value={isNaN(discount) ? "" : discount}
                   onChange={(e) => {
                     const val = e.target.value;
@@ -478,7 +484,7 @@ export default function EditInvoicePage() {
         <Button variant="outline" size="sm" onClick={handleDiscard}>
           Discard
         </Button>
-        <Button size="sm" onClick={handleSaveInvoice} loading={isLoading} disabled={items.length === 0 || !selectedCustomerId}>Save Invoice</Button>
+        <Button size="sm" onClick={handleSaveInvoice} loading={isLoading} disabled={items.length === 0 || !selectedCustomerId || isPaid}>Save Invoice</Button>
       </div>
     </main>
   );
