@@ -125,6 +125,8 @@ export default function NewInvoicePage() {
         variant: "success",
       });
 
+      router.push("/invoices");
+
       // Reset form
       setItems([]);
       setDiscount(0);
