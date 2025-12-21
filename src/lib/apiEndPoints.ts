@@ -9,3 +9,4 @@ export const API_REPORTS_PAYMENTS = "/reports/payments/";
 export const API_REPORTS_CUSTOMERS_AGING = "/reports/customers/aging/";
 export const API_PAYMENTS = "/payments/";
 export const API_PAYMENTS_SEARCH = "/payments/search/";
+export const API_NOTIFICATION_SETTINGS = "/notification-settings";
