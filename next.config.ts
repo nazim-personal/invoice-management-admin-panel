@@ -33,7 +33,8 @@ const nextConfig: NextConfig = {
     allowedDevOrigins: [
       "https://*.cluster-bqwaigqtxbeautecnatk4o6ynk.cloudworkstations.dev",
     ],
-  }
+  },
+  output: 'standalone',
 };
 
 export default nextConfig;

@@ -1,4 +1,4 @@
-import { products } from "@/lib/data";
+
 import { ProductClient } from "./components/product-client";
 
 export default function ProductsPage() {

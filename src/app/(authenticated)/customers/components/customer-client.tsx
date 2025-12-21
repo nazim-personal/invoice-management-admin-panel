@@ -54,7 +54,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
-  MessageSquareQuote,
   MoreHorizontal,
   Pencil,
   PlusCircle,
@@ -65,7 +64,6 @@ import {
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { CustomerForm } from "./customer-form";
-import { InsightsDialog } from "./insights-dialog";
 import { MetaTypes } from "@/lib/types/api";
 import { useToast } from "@/hooks/use-toast";
 import { handleApiError } from "@/lib/helpers/axios/errorHandler";
@@ -80,7 +78,6 @@ export function CustomerClient() {
   const [customers, setCustomers] = useState<CustomerDataTypes[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [isInsightsOpen, setIsInsightsOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerDataTypes | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -317,10 +314,7 @@ export function CustomerClient() {
     setIsFormOpen(true);
   };
 
-  const handleGetInsights = (customer: CustomerDataTypes) => {
-    setSelectedCustomer(customer);
-    setIsInsightsOpen(true);
-  };
+
 
   const handleFormSave = (customer: CustomerDataTypes | null) => {
     setIsFormOpen(false);
@@ -528,10 +522,7 @@ export function CustomerClient() {
                                   Edit Customer
                                 </DropdownMenuItem>
                               </Can>
-                              <DropdownMenuItem onSelect={() => handleGetInsights(customer)}>
-                                <MessageSquareQuote className="mr-2 h-4 w-4" />
-                                Get AI Insights
-                              </DropdownMenuItem>
+
                               <DropdownMenuSeparator />
                               {activeTab === "Deleted" ? (
                                 <Can permission="customers.delete">
@@ -633,13 +624,7 @@ export function CustomerClient() {
         </TabsContent>
       </Tabs>
 
-      {isInsightsOpen && selectedCustomer && (
-        <InsightsDialog
-          isOpen={isInsightsOpen}
-          onOpenChange={setIsInsightsOpen}
-          customer={selectedCustomer}
-        />
-      )}
+
     </>
   );
 }
