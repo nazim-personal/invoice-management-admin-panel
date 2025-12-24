@@ -11,9 +11,9 @@ export async function POST(req: Request) {
         const response = await API.post<SignInApiResponseTypes>(API_AUTH_SIGN_IN, body);
         const apiResponse = response.data;
         const res = NextResponse.json({
-            success: apiResponse?.success,
-            message: apiResponse?.message,
-            user_info: apiResponse?.data?.results?.user_info,
+            success: apiResponse?.success ?? false,
+            message: apiResponse?.message ?? "",
+            user_info: apiResponse?.data?.results?.user ?? null,
         });
         const encrypted_access_token = encryptToken(apiResponse?.data?.results?.access_token || "");
         res.cookies.set({
@@ -28,7 +28,7 @@ export async function POST(req: Request) {
 
         // Set user_details cookie (readable by client)
         // Only store non-sensitive display info
-        const userInfo = apiResponse?.data?.results?.user_info;
+        const userInfo = apiResponse?.data?.results?.user;
 
         if (userInfo) {
             const userDetails = {

@@ -11,6 +11,6 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-    # Add other environment variables here or use env_file
-    # env_file:
-    #   - .env
+      - NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

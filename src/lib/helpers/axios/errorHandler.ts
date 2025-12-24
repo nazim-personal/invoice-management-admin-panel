@@ -51,7 +51,9 @@ export const handleApiError = (error: any): ReturnTypes => {
 };
 
 export function axiosErrorResponse(err: any): NextResponse {
-  return NextResponse.json(err.response?.data, { status: err.status });
+  const status = err.response?.status || 500;
+  const data = err.response?.data || { success: false, message: err.message || "Internal Server Error" };
+  return NextResponse.json(data, { status });
 }
 export function nextErrorResponse(err: any): NextResponse {
   const status = err.status || 500;
