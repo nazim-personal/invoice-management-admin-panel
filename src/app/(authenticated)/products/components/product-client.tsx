@@ -438,8 +438,8 @@ export function ProductClient() {
                           <EmptyState
                             icon={<Package className="h-12 w-12" />}
                             title="No products found"
-                            description="Add products to your inventory to get started."
-                            action={{
+                            description={activeTab === "Deleted" ? "No deleted products found." : "Add products to your inventory to get started."}
+                            action={activeTab === "Deleted" ? undefined : {
                               label: "Create Product",
                               onClick: handleAddNew,
                             }}

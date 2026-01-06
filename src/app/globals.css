@@ -131,9 +131,8 @@
   }
 
   /* Prevent layout shift when modals open */
-  body.modal-open {
-    overflow: hidden;
-    padding-right: var(--scrollbar-width, 0px);
+  body[data-scroll-locked] {
+    padding-right: 0 !important;
   }
 }
 

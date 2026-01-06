@@ -449,8 +449,8 @@ export function CustomerClient() {
                         <EmptyState
                           icon={<Users className="h-12 w-12" />}
                           title="No customers found"
-                          description="Get started by adding your first customer."
-                          action={{
+                          description={activeTab === "Deleted" ? "No deleted customers found." : "Get started by adding your first customer."}
+                          action={activeTab === "Deleted" ? undefined : {
                             label: "Create Customer",
                             onClick: handleAddNew,
                           }}
