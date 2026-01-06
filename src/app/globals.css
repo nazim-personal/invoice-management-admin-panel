@@ -101,8 +101,13 @@
 
   /* Prevent page jump when modal opens by reserving scrollbar space */
   html {
-    overflow-y: scroll;
     scrollbar-gutter: stable;
+    height: 100%;
+    @apply bg-background;
+  }
+
+  body {
+    min-height: 100%;
   }
 
   /* Custom scrollbar styling for dark theme */

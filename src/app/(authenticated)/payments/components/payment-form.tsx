@@ -174,8 +174,8 @@ export function PaymentForm({
                         >
                             Cancel
                         </Button>
-                        <Button type="submit" disabled={isLoading}>
-                            {isLoading ? "Recording..." : "Record Payment"}
+                        <Button type="submit" loading={isLoading}>
+                            Record Payment
                         </Button>
                     </DialogFooter>
                 </form>

@@ -2,11 +2,11 @@
 
 import * as React from "react";
 import { useTheme } from "@/context/ThemeContext";
-import { cn } from "@/lib/utils";
+import { cn, hexToHSL } from "@/lib/utils";
 import { Check, Laptop, Moon, Sun } from "lucide-react";
 
 export function ThemeSwitcher() {
-    const { currentTheme, setTheme, mode, setMode, themes } = useTheme();
+    const { currentTheme, setTheme, mode, setMode, themes, setCustomTheme } = useTheme();
 
     return (
         <div className="space-y-6">
@@ -84,6 +84,34 @@ export function ThemeSwitcher() {
                             <span className="sr-only">{theme.label}</span>
                         </button>
                     ))}
+                    <div className="relative flex items-center justify-center">
+                        <input
+                            type="color"
+                            id="custom-color"
+                            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                            onChange={(e) => {
+                                const hsl = hexToHSL(e.target.value);
+                                setCustomTheme(hsl);
+                            }}
+                        />
+                        <div
+                            className={cn(
+                                "flex h-9 w-9 items-center justify-center rounded-full border-2 text-xs transition-all",
+                                currentTheme === "custom"
+                                    ? "border-primary"
+                                    : "border-muted-foreground/20 hover:border-muted-foreground/40"
+                            )}
+                            title="Custom Color"
+                        >
+                            <span
+                                className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-red-500 via-green-500 to-blue-500"
+                            >
+                                {currentTheme === "custom" && (
+                                    <Check className="h-4 w-4 text-white" />
+                                )}
+                            </span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

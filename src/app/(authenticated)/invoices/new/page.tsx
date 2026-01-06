@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +44,7 @@ export default function NewInvoicePage() {
   const [discount, setDiscount] = React.useState(0);
   const [amountPaid, setAmountPaid] = React.useState(0);
   const [isLoading, setIsLoading] = React.useState(false);
+  const [isPdfLoading, setIsPdfLoading] = useState(false);
   const [dueDate, setDueDate] = useState(new Date().toISOString().split("T")[0]);
   console.log('items: ', items);
 
@@ -195,33 +195,38 @@ export default function NewInvoicePage() {
       }
     }
 
-    const response = await handleSaveInvoice();
-    if (response?.success && response.data?.results?.id) {
-      try {
-        const invoiceId = response.data.results.id;
-        const pdfResponse = await fetch(`/api/invoices/${invoiceId}/pdf`);
+    setIsPdfLoading(true);
+    try {
+      const response = await handleSaveInvoice();
+      if (response?.success && response.data?.results?.id) {
+        try {
+          const invoiceId = response.data.results.id;
+          const pdfResponse = await fetch(`/api/invoices/${invoiceId}/pdf`);
 
-        if (!pdfResponse.ok) {
-          throw new Error("Failed to generate PDF");
+          if (!pdfResponse.ok) {
+            throw new Error("Failed to generate PDF");
+          }
+
+          const blob = await pdfResponse.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `invoice-${response.data.results.invoice_number}.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+        } catch (error) {
+          console.error("PDF download error:", error);
+          toast({
+            title: "PDF Error",
+            description: "Failed to download invoice PDF.",
+            variant: "destructive",
+          });
         }
-
-        const blob = await pdfResponse.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `invoice-${response.data.results.invoice_number}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-      } catch (error) {
-        console.error("PDF download error:", error);
-        toast({
-          title: "PDF Error",
-          description: "Failed to download invoice PDF.",
-          variant: "destructive",
-        });
       }
+    } finally {
+      setIsPdfLoading(false);
     }
   };
 
@@ -423,7 +428,7 @@ export default function NewInvoicePage() {
 
               </CardContent>
               <CardFooter>
-                <Button className="w-full" onClick={handleGeneratePdf} disabled={items.length === 0 || !selectedCustomerId}>
+                <Button className="w-full" onClick={handleGeneratePdf} loading={isPdfLoading} disabled={items.length === 0 || !selectedCustomerId}>
                   Generate PDF
                 </Button>
               </CardFooter>

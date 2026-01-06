@@ -118,21 +118,40 @@ type ThemeContextType = {
     mode: ThemeMode;
     setMode: (mode: ThemeMode) => void;
     themes: ThemeColor[];
+    customColor: string;
+    setCustomTheme: (color: string) => void;
 };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const [currentTheme, setCurrentTheme] = useState("blue");
+    const [customColor, setCustomColor] = useState("");
     const [mode, setModeState] = useState<ThemeMode>("system");
     const [isInitialized, setIsInitialized] = useState(false);
 
-    const applyThemeVars = (themeName: string, isDark: boolean) => {
-        const theme = themes.find((t) => t.name === themeName);
-        if (!theme) return;
-
+    const applyThemeVars = (themeName: string, isDark: boolean, customThemeColor?: string) => {
         const root = document.documentElement;
-        const cssVars = isDark ? theme.cssVars.dark : theme.cssVars.light;
+        let cssVars: Record<string, string> = {};
+
+        if (themeName === "custom" && customThemeColor) {
+            cssVars = {
+                "--primary": customThemeColor,
+                "--ring": customThemeColor,
+                "--sidebar-primary": customThemeColor,
+                "--sidebar-ring": customThemeColor,
+                "--sidebar-accent": customThemeColor,
+                "--sidebar-accent-foreground": "0 0% 100%", // White text for active item
+            };
+        } else {
+            const theme = themes.find((t) => t.name === themeName);
+            if (!theme) return;
+            cssVars = isDark ? theme.cssVars.dark : theme.cssVars.light;
+
+            // Override sidebar accent to match primary color
+            cssVars["--sidebar-accent"] = cssVars["--primary"];
+            cssVars["--sidebar-accent-foreground"] = "0 0% 100%";
+        }
 
         Object.entries(cssVars).forEach(([key, value]) => {
             root.style.setProperty(key, value);
@@ -153,28 +172,38 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             root.classList.remove("dark");
         }
 
-        applyThemeVars(currentTheme, effectiveMode === "dark");
+        applyThemeVars(currentTheme, effectiveMode === "dark", customColor);
     };
 
     const setTheme = (themeName: string) => {
-        const theme = themes.find((t) => t.name === themeName);
-        if (!theme) return;
-
         setCurrentTheme(themeName);
         localStorage.setItem("app-theme", themeName);
 
         const root = document.documentElement;
         const isDark = root.classList.contains("dark");
-        applyThemeVars(themeName, isDark);
+        applyThemeVars(themeName, isDark, customColor);
+    };
+
+    const setCustomTheme = (color: string) => {
+        setCustomColor(color);
+        setCurrentTheme("custom");
+        localStorage.setItem("app-theme", "custom");
+        localStorage.setItem("app-custom-color", color);
+
+        const root = document.documentElement;
+        const isDark = root.classList.contains("dark");
+        applyThemeVars("custom", isDark, color);
     };
 
     // Initialize theme and mode on mount
     useEffect(() => {
         const savedTheme = localStorage.getItem("app-theme") || "blue";
         const savedMode = (localStorage.getItem("app-mode") as ThemeMode) || "system";
+        const savedCustomColor = localStorage.getItem("app-custom-color") || "";
 
         setCurrentTheme(savedTheme);
-        setModeState(savedMode); // Set state directly to avoid closure stale state in setMode helper if used
+        setModeState(savedMode);
+        setCustomColor(savedCustomColor);
 
         // Apply mode
         const root = document.documentElement;
@@ -187,8 +216,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             root.classList.remove("dark");
         }
 
-        // Apply theme vars using the saved theme (not currentTheme state which is stale)
-        applyThemeVars(savedTheme, effectiveMode === "dark");
+        // Apply theme vars
+        applyThemeVars(savedTheme, effectiveMode === "dark", savedCustomColor);
 
         setIsInitialized(true);
     }, []);
@@ -202,19 +231,19 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             const root = document.documentElement;
             if (mediaQuery.matches) {
                 root.classList.add("dark");
-                applyThemeVars(currentTheme, true);
+                applyThemeVars(currentTheme, true, customColor);
             } else {
                 root.classList.remove("dark");
-                applyThemeVars(currentTheme, false);
+                applyThemeVars(currentTheme, false, customColor);
             }
         };
 
         mediaQuery.addEventListener("change", handleChange);
         return () => mediaQuery.removeEventListener("change", handleChange);
-    }, [mode, currentTheme]);
+    }, [mode, currentTheme, customColor]);
 
     return (
-        <ThemeContext.Provider value={{ currentTheme, setTheme, mode, setMode, themes }}>
+        <ThemeContext.Provider value={{ currentTheme, setTheme, mode, setMode, themes, customColor, setCustomTheme }}>
             {children}
         </ThemeContext.Provider>
     );
