@@ -60,6 +60,7 @@ import {
   RotateCcw,
   Search,
   Trash2,
+  Users,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -71,6 +72,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { CustomerSkeleton } from "./customer-skeleton";
 import { capitalizeWords, formatDate } from "@/lib/helpers/forms";
 import { Can } from "@/components/Can";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export function CustomerClient() {
   const router = useRouter();
@@ -443,8 +445,16 @@ export function CustomerClient() {
                     Array.from({ length: rowsPerPage }).map((_, i) => <CustomerSkeleton key={i} />)
                   ) : customers.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                        No customers found.
+                      <TableCell colSpan={6} className="h-24 text-center">
+                        <EmptyState
+                          icon={<Users className="h-12 w-12" />}
+                          title="No customers found"
+                          description="Get started by adding your first customer."
+                          action={{
+                            label: "Create Customer",
+                            onClick: handleAddNew,
+                          }}
+                        />
                       </TableCell>
                     </TableRow>
                   ) : (

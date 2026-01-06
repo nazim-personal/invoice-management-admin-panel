@@ -12,6 +12,8 @@ type ThemeColor = {
     };
 };
 
+type ThemeMode = "light" | "dark" | "system";
+
 const themes: ThemeColor[] = [
     {
         name: "blue",
@@ -113,6 +115,8 @@ const themes: ThemeColor[] = [
 type ThemeContextType = {
     currentTheme: string;
     setTheme: (themeName: string) => void;
+    mode: ThemeMode;
+    setMode: (mode: ThemeMode) => void;
     themes: ThemeColor[];
 };
 
@@ -120,7 +124,37 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const [currentTheme, setCurrentTheme] = useState("blue");
+    const [mode, setModeState] = useState<ThemeMode>("system");
     const [isInitialized, setIsInitialized] = useState(false);
+
+    const applyThemeVars = (themeName: string, isDark: boolean) => {
+        const theme = themes.find((t) => t.name === themeName);
+        if (!theme) return;
+
+        const root = document.documentElement;
+        const cssVars = isDark ? theme.cssVars.dark : theme.cssVars.light;
+
+        Object.entries(cssVars).forEach(([key, value]) => {
+            root.style.setProperty(key, value);
+        });
+    };
+
+    const setMode = (newMode: ThemeMode) => {
+        setModeState(newMode);
+        localStorage.setItem("app-mode", newMode);
+
+        const root = document.documentElement;
+        const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        const effectiveMode = newMode === "system" ? systemTheme : newMode;
+
+        if (effectiveMode === "dark") {
+            root.classList.add("dark");
+        } else {
+            root.classList.remove("dark");
+        }
+
+        applyThemeVars(currentTheme, effectiveMode === "dark");
+    };
 
     const setTheme = (themeName: string) => {
         const theme = themes.find((t) => t.name === themeName);
@@ -131,58 +165,56 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
         const root = document.documentElement;
         const isDark = root.classList.contains("dark");
-        const cssVars = isDark ? theme.cssVars.dark : theme.cssVars.light;
-
-        Object.entries(cssVars).forEach(([key, value]) => {
-            root.style.setProperty(key, value);
-        });
+        applyThemeVars(themeName, isDark);
     };
 
-    // Initialize theme on mount
+    // Initialize theme and mode on mount
     useEffect(() => {
-        const savedTheme = localStorage.getItem("app-theme");
-        const themeToApply = savedTheme || "blue";
+        const savedTheme = localStorage.getItem("app-theme") || "blue";
+        const savedMode = (localStorage.getItem("app-mode") as ThemeMode) || "system";
 
-        // Apply the theme immediately
-        setTheme(themeToApply);
+        setCurrentTheme(savedTheme);
+        setModeState(savedMode); // Set state directly to avoid closure stale state in setMode helper if used
+
+        // Apply mode
+        const root = document.documentElement;
+        const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        const effectiveMode = savedMode === "system" ? systemTheme : savedMode;
+
+        if (effectiveMode === "dark") {
+            root.classList.add("dark");
+        } else {
+            root.classList.remove("dark");
+        }
+
+        // Apply theme vars using the saved theme (not currentTheme state which is stale)
+        applyThemeVars(savedTheme, effectiveMode === "dark");
+
         setIsInitialized(true);
     }, []);
 
-    // Listen for dark mode changes to update variables if needed
+    // Listen for system theme changes
     useEffect(() => {
-        if (!isInitialized) return;
+        if (mode !== "system") return;
 
-        const observer = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                if (
-                    mutation.type === "attributes" &&
-                    mutation.attributeName === "class"
-                ) {
-                    // Re-apply current theme to ensure correct mode variables are used
-                    const theme = themes.find((t) => t.name === currentTheme);
-                    if (!theme) return;
+        const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+        const handleChange = () => {
+            const root = document.documentElement;
+            if (mediaQuery.matches) {
+                root.classList.add("dark");
+                applyThemeVars(currentTheme, true);
+            } else {
+                root.classList.remove("dark");
+                applyThemeVars(currentTheme, false);
+            }
+        };
 
-                    const root = document.documentElement;
-                    const isDark = root.classList.contains("dark");
-                    const cssVars = isDark ? theme.cssVars.dark : theme.cssVars.light;
-
-                    Object.entries(cssVars).forEach(([key, value]) => {
-                        root.style.setProperty(key, value);
-                    });
-                }
-            });
-        });
-
-        observer.observe(document.documentElement, {
-            attributes: true,
-            attributeFilter: ["class"],
-        });
-
-        return () => observer.disconnect();
-    }, [currentTheme, isInitialized]);
+        mediaQuery.addEventListener("change", handleChange);
+        return () => mediaQuery.removeEventListener("change", handleChange);
+    }, [mode, currentTheme]);
 
     return (
-        <ThemeContext.Provider value={{ currentTheme, setTheme, themes }}>
+        <ThemeContext.Provider value={{ currentTheme, setTheme, mode, setMode, themes }}>
             {children}
         </ThemeContext.Provider>
     );

@@ -38,9 +38,11 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
-import * as React from 'react';
 import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
 import DashboardSkeleton from './skeleton';
+import { EmptyState } from "@/components/ui/empty-state";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const chartConfig = {
   total: {
@@ -50,11 +52,12 @@ const chartConfig = {
 };
 
 export default function DashboardPage() {
+  const router = useRouter();
   const { toast } = useToast();
-  const [chartData, setChartData] = React.useState<DashboardSalesPerformanceTypes[]>([]);
-  const [stats, setStats] = React.useState<DashboardStatsTypes>()
-  const [invoices, setInvoices] = React.useState<InvoiceDataTypes[]>([]);
-  const [statsLoading, setStatsLoading] = React.useState(true)
+  const [chartData, setChartData] = useState<DashboardSalesPerformanceTypes[]>([]);
+  const [stats, setStats] = useState<DashboardStatsTypes>()
+  const [invoices, setInvoices] = useState<InvoiceDataTypes[]>([]);
+  const [statsLoading, setStatsLoading] = useState(true)
 
   const getStats = async () => {
     setStatsLoading(true);
@@ -91,7 +94,7 @@ export default function DashboardPage() {
     }
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     getStats()
   }, []);
 
@@ -103,11 +106,13 @@ export default function DashboardPage() {
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
       <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
-        <Link href="/reports">
-          <Card className="hover:bg-muted/50 transition-colors">
+        <Link href="/reports" className="animate-fade-in stagger-1">
+          <Card className="hover-lift cursor-pointer">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-              <IndianRupee className="h-4 w-4 text-muted-foreground" />
+              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                <IndianRupee className="h-4 w-4 text-primary" />
+              </div>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold font-headline">
@@ -116,56 +121,62 @@ export default function DashboardPage() {
                   {formatWithThousands(stats?.total_revenue)}
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground">
-                +{stats?.revenue_change_percent}% from last month
+              <p className="text-xs text-muted-foreground mt-1">
+                <span className="text-green-600 font-medium">+{stats?.revenue_change_percent}%</span> from last month
               </p>
             </CardContent>
           </Card>
         </Link>
-        <Link href="/customers">
-          <Card className="hover:bg-muted/50 transition-colors">
+        <Link href="/customers" className="animate-fade-in stagger-2">
+          <Card className="hover-lift cursor-pointer">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
+              <div className="h-8 w-8 rounded-full bg-accent/10 flex items-center justify-center">
+                <Users className="h-4 w-4 text-accent" />
+              </div>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold font-headline">{stats?.total_customers}</div>
-              <p className="text-xs text-muted-foreground">
-                +{stats?.customers_change_percent}% from last month
+              <p className="text-xs text-muted-foreground mt-1">
+                <span className="text-green-600 font-medium">+{stats?.customers_change_percent}%</span> from last month
               </p>
             </CardContent>
           </Card>
         </Link>
-        <Link href="/invoices">
-          <Card className="hover:bg-muted/50 transition-colors">
+        <Link href="/invoices" className="animate-fade-in stagger-3">
+          <Card className="hover-lift cursor-pointer">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Pending Invoices</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
+              <div className="h-8 w-8 rounded-full bg-amber-500/10 flex items-center justify-center">
+                <FileText className="h-4 w-4 text-amber-600" />
+              </div>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold font-headline">{stats?.pending_invoices}</div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground mt-1">
                 from a total of {stats?.total_invoices}
               </p>
             </CardContent>
           </Card>
         </Link>
-        <Link href="/products">
-          <Card className="hover:bg-muted/50 transition-colors">
+        <Link href="/products" className="animate-fade-in stagger-4">
+          <Card className="hover-lift cursor-pointer">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Products</CardTitle>
-              <Package className="h-4 w-4 text-muted-foreground" />
+              <div className="h-8 w-8 rounded-full bg-green-500/10 flex items-center justify-center">
+                <Package className="h-4 w-4 text-green-600" />
+              </div>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold font-headline">{stats?.total_products}</div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground mt-1">
                 Across all categories
               </p>
             </CardContent>
           </Card>
         </Link>
       </div>
-      <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3 animate-fade-in">
         <Card className="xl:col-span-2">
           <CardHeader>
             <CardTitle className="font-headline">Sales Performance</CardTitle>
@@ -227,56 +238,74 @@ export default function DashboardPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {invoices.map((invoice) => (
-                  <TableRow key={invoice.id}>
-                    <TableCell>
-                      <div className="font-medium">{capitalizeWords(invoice.customer.name)}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {invoice.customer.phone}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div>
-                        <span className="inline-flex items-center gap-0.5">
-                          <IndianRupee className="h-3 w-3" />
-                          {formatWithThousands(invoice.total_amount)}
-                        </span>
-                      </div>
-                      {invoice.status !== 'Paid' && (
-                        <div className="text-xs text-muted-foreground">
-                          <span className="inline-flex items-center gap-0.5">
-                            Due:
-                            <IndianRupee className="h-3 w-3 ml-0" />
-                            {formatWithThousands(invoice.due_amount)}
-                          </span>
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Badge
-                        variant={
-                          invoice.status === "Paid"
-                            ? "default"
-                            : invoice.status === "Pending"
-                              ? "secondary"
-                              : "destructive"
-                        }
-                        className="capitalize"
-                      >
-                        {invoice.status}
-                      </Badge>
+                {invoices.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={3} className="h-24 text-center">
+                      <EmptyState
+                        icon={<FileText className="h-12 w-12" />}
+                        title="No invoices found"
+                        description="Create your first invoice to get started."
+                        action={{
+                          label: "Create Invoice",
+                          onClick: () => router.push("/invoices/new"),
+                        }}
+                      />
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  invoices.map((invoice) => (
+                    <TableRow key={invoice.id} className="table-row-hover">
+                      <TableCell>
+                        <div className="font-medium">{capitalizeWords(invoice.customer.name)}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {invoice.customer.phone}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div>
+                          <span className="inline-flex items-center gap-0.5 font-medium">
+                            <IndianRupee className="h-3 w-3" />
+                            {formatWithThousands(invoice.total_amount)}
+                          </span>
+                        </div>
+                        {invoice.status !== 'Paid' && (
+                          <div className="text-xs text-muted-foreground">
+                            <span className="inline-flex items-center gap-0.5">
+                              Due:
+                              <IndianRupee className="h-3 w-3 ml-0" />
+                              {formatWithThousands(invoice.due_amount)}
+                            </span>
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Badge
+                          variant={
+                            invoice.status === "Paid"
+                              ? "default"
+                              : invoice.status === "Pending"
+                                ? "secondary"
+                                : "destructive"
+                          }
+                          className="capitalize"
+                        >
+                          {invoice.status}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
-            <div className="mt-4 flex justify-end">
-              <Button asChild variant="ghost" size="sm">
-                <Link href="/invoices">
-                  View All <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-            </div>
+            {invoices.length > 0 && (
+              <div className="mt-4 flex justify-end">
+                <Button asChild variant="ghost" size="sm" className="transition-smooth hover:gap-3">
+                  <Link href="/invoices">
+                    View All <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

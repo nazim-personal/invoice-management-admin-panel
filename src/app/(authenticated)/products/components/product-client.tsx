@@ -39,6 +39,7 @@ import {
   Trash2,
   IndianRupee,
   RotateCcw,
+  Package,
 } from "lucide-react";
 import { ProductForm } from "./product-form";
 import {
@@ -69,6 +70,7 @@ import { capitalizeWords, formatDate } from "@/lib/helpers/forms";
 import { formatWithThousands } from "@/lib/helpers/miscellaneous";
 import { Can } from "@/components/Can";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export function ProductClient() {
   const router = useRouter();
@@ -432,8 +434,16 @@ export function ProductClient() {
                       Array.from({ length: rowsPerPage }).map((_, i) => <ProductSkeleton key={i} />)
                     ) : products.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                          No products found.
+                        <TableCell colSpan={7} className="h-24 text-center">
+                          <EmptyState
+                            icon={<Package className="h-12 w-12" />}
+                            title="No products found"
+                            description="Add products to your inventory to get started."
+                            action={{
+                              label: "Create Product",
+                              onClick: handleAddNew,
+                            }}
+                          />
                         </TableCell>
                       </TableRow>
                     ) : (

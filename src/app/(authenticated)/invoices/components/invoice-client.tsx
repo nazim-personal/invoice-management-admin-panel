@@ -51,6 +51,7 @@ import {
   Trash2,
   CircleDollarSign,
   IndianRupee,
+  FileText,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -73,6 +74,7 @@ import { InvoiceSkeleton } from "./invoice-skeleton";
 import { formatWithThousands, generateWhatsAppMessage } from "@/lib/helpers/miscellaneous";
 import { Can } from "@/components/Can";
 import { RotateCcw } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 
 const WhatsAppIcon = () => (
   <svg
@@ -515,8 +517,16 @@ export function InvoiceClient() {
                   Array.from({ length: rowsPerPage }).map((_, i) => <InvoiceSkeleton key={i} />)
                 ) : invoices.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                      No invoices found.
+                    <TableCell colSpan={7} className="h-24 text-center">
+                      <EmptyState
+                        icon={<FileText className="h-12 w-12" />}
+                        title="No invoices found"
+                        description="Create your first invoice to get started."
+                        action={{
+                          label: "Create Invoice",
+                          onClick: () => router.push("/invoices/new"),
+                        }}
+                      />
                     </TableCell>
                   </TableRow>
                 ) : (

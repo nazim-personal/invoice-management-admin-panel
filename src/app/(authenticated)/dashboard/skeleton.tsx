@@ -27,79 +27,68 @@ export default function DashboardSkeleton() {
             {/* Stats cards */}
             <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
                 {[1, 2, 3, 4].map((i) => (
-                    <Card key={i}>
+                    <Card key={i} className={`animate-fade-in stagger-${i}`}>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">
-                                <Skeleton className="h-4 w-24" />
-                            </CardTitle>
-                            <Skeleton className="h-4 w-4 rounded-full" />
+                            <div className="space-y-2 flex-1">
+                                <Skeleton className="h-4 w-28" />
+                            </div>
+                            <Skeleton className="h-8 w-8 rounded-full" />
                         </CardHeader>
                         <CardContent>
-                            <Skeleton className="h-8 w-20 mb-2" />
-                            <Skeleton className="h-3 w-28" />
+                            <Skeleton className="h-8 w-24 mb-2" />
+                            <Skeleton className="h-3 w-32" />
                         </CardContent>
                     </Card>
                 ))}
             </div>
 
-            <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3 animate-fade-in">
                 {/* Sales Performance Skeleton */}
                 <Card className="xl:col-span-2">
                     <CardHeader>
-                        <CardTitle className="font-headline">
-                            <Skeleton className="h-5 w-40" />
-                        </CardTitle>
-                        <CardDescription>
-                            <Skeleton className="h-4 w-60" />
-                        </CardDescription>
+                        <div className="space-y-2">
+                            <Skeleton className="h-6 w-48" />
+                            <Skeleton className="h-4 w-64" />
+                        </div>
                     </CardHeader>
                     <CardContent className="pl-2">
-                        <Skeleton className="h-[300px] w-full rounded-md" />
+                        <div className="h-[300px] w-full flex items-end justify-around gap-2 px-4">
+                            {[40, 60, 45, 70, 55, 65].map((height, i) => (
+                                <Skeleton
+                                    key={i}
+                                    className="w-full rounded-t-md"
+                                    style={{ height: `${height}%` }}
+                                />
+                            ))}
+                        </div>
                     </CardContent>
                 </Card>
 
                 {/* Recent Invoices Skeleton */}
                 <Card>
                     <CardHeader>
-                        <CardTitle className="font-headline">
-                            <Skeleton className="h-5 w-40" />
-                        </CardTitle>
-                        <CardDescription>
-                            <Skeleton className="h-4 w-52" />
-                        </CardDescription>
+                        <div className="space-y-2">
+                            <Skeleton className="h-6 w-40" />
+                            <Skeleton className="h-4 w-56" />
+                        </div>
                     </CardHeader>
                     <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Customer</TableHead>
-                                    <TableHead className="text-right">Amount</TableHead>
-                                    <TableHead className="text-right">Status</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {[1, 2, 3, 4].map((i) => (
-                                    <TableRow key={i}>
-                                        <TableCell>
-                                            <Skeleton className="h-4 w-32 mb-1" />
-                                            <Skeleton className="h-3 w-24" />
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <Skeleton className="h-4 w-16 mb-1 ml-auto" />
-                                            <Skeleton className="h-3 w-12 ml-auto" />
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <Skeleton className="h-5 w-16 ml-auto rounded-full" />
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                        <div className="space-y-4">
+                            {[1, 2, 3, 4, 5].map((i) => (
+                                <div key={i} className="flex items-center justify-between py-2">
+                                    <div className="space-y-2 flex-1">
+                                        <Skeleton className="h-4 w-32" />
+                                        <Skeleton className="h-3 w-24" />
+                                    </div>
+                                    <div className="space-y-2 text-right">
+                                        <Skeleton className="h-4 w-20 ml-auto" />
+                                        <Skeleton className="h-5 w-16 ml-auto rounded-full" />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                         <div className="mt-4 flex justify-end">
-                            <Button variant="ghost" size="sm" disabled>
-                                <Skeleton className="h-4 w-16" />
-                                <ArrowRight className="ml-2 h-4 w-4 opacity-40" />
-                            </Button>
+                            <Skeleton className="h-9 w-24 rounded-md" />
                         </div>
                     </CardContent>
                 </Card>
