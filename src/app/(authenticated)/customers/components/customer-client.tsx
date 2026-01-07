@@ -289,7 +289,7 @@ export function CustomerClient() {
     : isSomeOnPageSelected
       ? "indeterminate"
       : false;
-  const totalPages = Math.ceil(meta.total / rowsPerPage);
+  const totalPages = Math.max(Math.ceil(meta.total / rowsPerPage), 1);
   const startCustomer = customers.length > 0 ? (meta.page - 1) * rowsPerPage + 1 : 0;
   const endCustomer = Math.min(meta.page * rowsPerPage, meta.total);
 
@@ -622,7 +622,7 @@ export function CustomerClient() {
                       size="icon"
                       className="h-8 w-8"
                       onClick={handleNextPage}
-                      disabled={currentPage === totalPages}
+                      disabled={currentPage >= totalPages}
                     >
                       <ChevronRight className="h-4 w-4" />
                     </Button>

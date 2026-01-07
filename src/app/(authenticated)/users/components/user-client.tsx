@@ -132,7 +132,7 @@ export function UserClient() {
         }
     };
 
-    const totalPages = Math.ceil(meta.total / rowsPerPage);
+    const totalPages = Math.max(Math.ceil(meta.total / rowsPerPage), 1);
     const startUser = users.length > 0 ? (meta.page - 1) * rowsPerPage + 1 : 0;
     const endUser = Math.min(meta.page * rowsPerPage, meta.total);
 
@@ -295,7 +295,7 @@ export function UserClient() {
                                         size="icon"
                                         className="h-8 w-8"
                                         onClick={handleNextPage}
-                                        disabled={currentPage === totalPages}
+                                        disabled={currentPage >= totalPages}
                                     >
                                         <ChevronRight className="h-4 w-4" />
                                         <span className="sr-only">Next page</span>

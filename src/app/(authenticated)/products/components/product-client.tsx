@@ -279,7 +279,7 @@ export function ProductClient() {
   const isAllOnPageSelected = products.length > 0 && products.every(p => selectedProductIds.includes(p.id));
   const isSomeOnPageSelected = products.length > 0 && products.some(p => selectedProductIds.includes(p.id));
   const selectAllCheckedState = isAllOnPageSelected ? true : (isSomeOnPageSelected ? 'indeterminate' : false);
-  const totalPages = Math.ceil(meta.total / rowsPerPage);
+  const totalPages = Math.max(Math.ceil(meta.total / rowsPerPage), 1);
   const startProduct = products.length > 0 ? (currentPage - 1) * rowsPerPage + 1 : 0;
   const endProduct = Math.min(currentPage * rowsPerPage, meta.total);
 
@@ -594,7 +594,7 @@ export function ProductClient() {
                         size="icon"
                         className="h-8 w-8"
                         onClick={handleNextPage}
-                        disabled={currentPage === totalPages}
+                        disabled={currentPage >= totalPages}
                       >
                         <ChevronRight className="h-4 w-4" />
                         <span className="sr-only">Next page</span>
