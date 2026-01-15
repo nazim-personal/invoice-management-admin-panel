@@ -51,6 +51,7 @@ import {
   Trash2,
   CircleDollarSign,
   IndianRupee,
+  FileText,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -73,6 +74,7 @@ import { InvoiceSkeleton } from "./invoice-skeleton";
 import { formatWithThousands, generateWhatsAppMessage } from "@/lib/helpers/miscellaneous";
 import { Can } from "@/components/Can";
 import { RotateCcw } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 
 const WhatsAppIcon = () => (
   <svg
@@ -204,7 +206,7 @@ export function InvoiceClient() {
             ...inv,
             status: "Paid",
             due_amount: 0,
-            amount_paid: currentInvoice?.total_amount, // keep consistency
+            amount_paid: currentInvoice?.total_amount ?? 0, // keep consistency
           }
           : inv
       )
@@ -387,7 +389,7 @@ export function InvoiceClient() {
   const isAllOnPageSelected = invoices.length > 0 && invoices.every(c => selectedInvoiceIds.includes(c.id));
   const isSomeOnPageSelected = invoices.length > 0 && invoices.some(c => selectedInvoiceIds.includes(c.id));
   const selectAllCheckedState = isAllOnPageSelected ? true : (isSomeOnPageSelected ? 'indeterminate' : false);
-  const totalPages = Math.ceil(meta.total / rowsPerPage);
+  const totalPages = Math.max(Math.ceil(meta.total / rowsPerPage), 1);
   const startInvoice = invoices.length > 0 ? (meta.page - 1) * rowsPerPage + 1 : 0;
   const endInvoice = Math.min(meta.page * rowsPerPage, meta.total);
 
@@ -515,8 +517,16 @@ export function InvoiceClient() {
                   Array.from({ length: rowsPerPage }).map((_, i) => <InvoiceSkeleton key={i} />)
                 ) : invoices.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                      No invoices found.
+                    <TableCell colSpan={7} className="h-24 text-center">
+                      <EmptyState
+                        icon={<FileText className="h-12 w-12" />}
+                        title="No invoices found"
+                        description="Create your first invoice to get started."
+                        action={{
+                          label: "Create Invoice",
+                          onClick: () => router.push("/invoices/new"),
+                        }}
+                      />
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -701,7 +711,7 @@ export function InvoiceClient() {
                     size="icon"
                     className="h-8 w-8"
                     onClick={handleNextPage}
-                    disabled={currentPage === totalPages}
+                    disabled={currentPage >= totalPages}
                   >
                     <ChevronRight className="h-4 w-4" />
                     <span className="sr-only">Next page</span>

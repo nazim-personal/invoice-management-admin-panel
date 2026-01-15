@@ -39,6 +39,7 @@ import {
   Trash2,
   IndianRupee,
   RotateCcw,
+  Package,
 } from "lucide-react";
 import { ProductForm } from "./product-form";
 import {
@@ -69,6 +70,7 @@ import { capitalizeWords, formatDate } from "@/lib/helpers/forms";
 import { formatWithThousands } from "@/lib/helpers/miscellaneous";
 import { Can } from "@/components/Can";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export function ProductClient() {
   const router = useRouter();
@@ -277,7 +279,7 @@ export function ProductClient() {
   const isAllOnPageSelected = products.length > 0 && products.every(p => selectedProductIds.includes(p.id));
   const isSomeOnPageSelected = products.length > 0 && products.some(p => selectedProductIds.includes(p.id));
   const selectAllCheckedState = isAllOnPageSelected ? true : (isSomeOnPageSelected ? 'indeterminate' : false);
-  const totalPages = Math.ceil(meta.total / rowsPerPage);
+  const totalPages = Math.max(Math.ceil(meta.total / rowsPerPage), 1);
   const startProduct = products.length > 0 ? (currentPage - 1) * rowsPerPage + 1 : 0;
   const endProduct = Math.min(currentPage * rowsPerPage, meta.total);
 
@@ -322,86 +324,83 @@ export function ProductClient() {
 
   return (
     <>
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-xl font-semibold font-headline tracking-tight">Products</h1>
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1 md:grow-0">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search products..."
-              className="w-full rounded-lg bg-background pl-10 md:w-[200px] lg:w-[336px]"
-              value={searchTerm}
-              onChange={handleSearch}
-            />
-          </div>
-          {selectedProductIds.length > 0 && (
-            <>
-              {activeTab === "Deleted" ? (
-                <Can permission="products.delete">
-                  <Button variant="outline" size="sm" onClick={handleBulkRestore} className="text-green-600 hover:text-green-700 border-green-200 hover:border-green-300 hover:bg-green-50">
-                    <RotateCcw className="mr-2 h-4 w-4" />
-                    Restore ({selectedProductIds.length})
-                  </Button>
-                </Can>
-              ) : (
-                <Can permission="products.delete">
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="outline" size="sm">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete ({selectedProductIds.length})
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This action cannot be undone. This will permanently delete the selected products.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleBulkDelete}>
-                          Continue
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </Can>
-              )}
-            </>
-          )}
-        </div>
-        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-          <Can permission="products.create">
-            <DialogTrigger asChild>
-              <Button onClick={handleAddNew} size="sm" className="h-8 gap-1">
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Create Product
-              </Button>
-            </DialogTrigger>
-          </Can>
-          <DialogContent className="sm:max-w-lg">
-            <DialogHeader>
-              <DialogTitle className="font-headline">
-                {selectedProduct ? "Edit Product" : "Create Product"}
-              </DialogTitle>
-              <DialogDescription>
-                {selectedProduct
-                  ? "Make changes to the product here. Click save when you're done."
-                  : "Add a new product to your inventory. Click save when you're done."}
-              </DialogDescription>
-            </DialogHeader>
-            <ProductForm product={selectedProduct} onSave={handleFormSave} />
-          </DialogContent>
-        </Dialog>
-      </div>
       <Tabs defaultValue="" onValueChange={handleTabChange}>
-        <div className="flex items-center justify-between gap-4 mt-4">
+        <div className="flex items-center justify-between gap-4">
           <TabsList>
             <TabsTrigger value="">All</TabsTrigger>
             <TabsTrigger value="Deleted">Deleted</TabsTrigger>
           </TabsList>
+          <div className="flex items-center gap-2">
+            {selectedProductIds.length > 0 && (
+              <>
+                {activeTab === "Deleted" ? (
+                  <Can permission="products.delete">
+                    <Button variant="outline" size="sm" onClick={handleBulkRestore} className="text-green-600 hover:text-green-700 border-green-200 hover:border-green-300 hover:bg-green-50">
+                      <RotateCcw className="mr-2 h-4 w-4" />
+                      Restore ({selectedProductIds.length})
+                    </Button>
+                  </Can>
+                ) : (
+                  <Can permission="products.delete">
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete ({selectedProductIds.length})
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete the selected products.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleBulkDelete}>
+                            Continue
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </Can>
+                )}
+              </>
+            )}
+            <div className="relative flex-1 md:grow-0">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search products..."
+                className="w-full rounded-lg bg-background pl-10 md:w-[200px] lg:w-[336px]"
+                value={searchTerm}
+                onChange={handleSearch}
+              />
+            </div>
+            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+              <Can permission="products.create">
+                <DialogTrigger asChild>
+                  <Button onClick={handleAddNew} size="sm" className="h-8 gap-1">
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Create Product
+                  </Button>
+                </DialogTrigger>
+              </Can>
+              <DialogContent className="sm:max-w-lg">
+                <DialogHeader>
+                  <DialogTitle className="font-headline">
+                    {selectedProduct ? "Edit Product" : "Create Product"}
+                  </DialogTitle>
+                  <DialogDescription>
+                    {selectedProduct
+                      ? "Make changes to the product here. Click save when you're done."
+                      : "Add a new product to your inventory. Click save when you're done."}
+                  </DialogDescription>
+                </DialogHeader>
+                <ProductForm product={selectedProduct} onSave={handleFormSave} />
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
         <TabsContent value={activeTab}>
           <Can permission="products.list" fallback={<div className="p-8 text-center text-muted-foreground">You do not have permission to view products.</div>}>
@@ -432,8 +431,16 @@ export function ProductClient() {
                       Array.from({ length: rowsPerPage }).map((_, i) => <ProductSkeleton key={i} />)
                     ) : products.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                          No products found.
+                        <TableCell colSpan={7} className="h-24 text-center">
+                          <EmptyState
+                            icon={<Package className="h-12 w-12" />}
+                            title="No products found"
+                            description={activeTab === "Deleted" ? "No deleted products found." : "Add products to your inventory to get started."}
+                            action={activeTab === "Deleted" ? undefined : {
+                              label: "Create Product",
+                              onClick: handleAddNew,
+                            }}
+                          />
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -546,51 +553,53 @@ export function ProductClient() {
                   </TableBody>
                 </Table>
               </CardContent>
-              <CardFooter className="flex items-center justify-between w-full border-t pt-4">
-                <div className="text-xs text-muted-foreground">
-                  {selectedProductIds.length > 0
-                    ? `${selectedProductIds.length} of ${products.length} product(s) selected.`
-                    : `Showing ${startProduct}-${endProduct} of ${meta.total} products`}
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">Rows per page</span>
-                    <Select value={String(rowsPerPage)} onValueChange={handleRowsPerPageChange}>
-                      <SelectTrigger className="h-8 w-[70px]">
-                        <SelectValue placeholder={String(rowsPerPage)} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="10">10</SelectItem>
-                        <SelectItem value="30">30</SelectItem>
-                        <SelectItem value="50">50</SelectItem>
-                        <SelectItem value="100">100</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+              <CardFooter>
+                <div className="flex items-center justify-between w-full">
                   <div className="text-xs text-muted-foreground">
-                    Page {currentPage} of {totalPages}
+                    {selectedProductIds.length > 0
+                      ? `${selectedProductIds.length} of ${products.length} product(s) selected.`
+                      : `Showing ${startProduct}-${endProduct} of ${meta.total} products`}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={handlePreviousPage}
-                      disabled={currentPage === 1}
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                      <span className="sr-only">Previous page</span>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={handleNextPage}
-                      disabled={currentPage === totalPages}
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                      <span className="sr-only">Next page</span>
-                    </Button>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">Rows per page</span>
+                      <Select value={String(rowsPerPage)} onValueChange={handleRowsPerPageChange}>
+                        <SelectTrigger className="h-8 w-[70px]">
+                          <SelectValue placeholder={String(rowsPerPage)} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="10">10</SelectItem>
+                          <SelectItem value="30">30</SelectItem>
+                          <SelectItem value="50">50</SelectItem>
+                          <SelectItem value="100">100</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Page {currentPage} of {totalPages}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={handlePreviousPage}
+                        disabled={currentPage === 1}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        <span className="sr-only">Previous page</span>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={handleNextPage}
+                        disabled={currentPage >= totalPages}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                        <span className="sr-only">Next page</span>
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </CardFooter>

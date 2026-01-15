@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 import Logo from "@/components/logo";
 import { Button } from "@/components/ui/button";
@@ -51,10 +51,16 @@ export default function LoginPage() {
     },
   });
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
-    await login(values);
-  }
+  const [isLoading, setIsLoading] = useState(false);
 
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsLoading(true);
+    try {
+      await login(values);
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
@@ -118,7 +124,8 @@ export default function LoginPage() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full">
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Sign In
               </Button>
             </form>
