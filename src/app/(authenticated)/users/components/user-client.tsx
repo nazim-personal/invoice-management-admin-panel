@@ -164,6 +164,14 @@ export function UserClient() {
                                 onChange={handleSearch}
                             />
                         </div>
+                        <Can permission="users.create">
+                            <Button onClick={() => router.push("/users/new")} size="sm" className="h-8 gap-1">
+                                <Shield className="h-3.5 w-3.5" />
+                                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                                    Create User
+                                </span>
+                            </Button>
+                        </Can>
                     </div>
                 </div>
                 <Card>
@@ -200,7 +208,15 @@ export function UserClient() {
                                             </TableCell>
                                             <TableCell>{user.email}</TableCell>
                                             <TableCell>
-                                                <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
+                                                <Badge
+                                                    variant={
+                                                        user.role === 'admin'
+                                                            ? 'default'
+                                                            : user.role === 'manager'
+                                                                ? 'secondary'
+                                                                : 'outline'
+                                                    }
+                                                >
                                                     {capitalizeWords(user.role || 'user')}
                                                 </Badge>
                                             </TableCell>

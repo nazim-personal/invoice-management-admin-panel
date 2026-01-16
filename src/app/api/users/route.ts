@@ -1,6 +1,7 @@
-import { API_USERS } from "@/constants/apis";
+import { API_USERS, API_USERS_DELETE } from "@/constants/apis";
 import { nextErrorResponse } from "@/lib/helpers/axios/errorHandler";
 import { withAuthProxy } from "@/lib/helpers/axios/withAuthProxy";
+import { DeletedResponse, UserApiResponseTypes } from "@/lib/types/users";
 import { NextResponse } from "next/server";
 
 export async function GET(req: Request) {
@@ -31,6 +32,21 @@ export async function POST(req: Request) {
     const body = await req.json();
     const response = await withAuthProxy({
       url: API_USERS,
+      method: "POST",
+      data: body,
+    });
+
+    return NextResponse.json(response);
+  } catch (err: any) {
+    return nextErrorResponse(err)
+  }
+}
+
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const body = await req.json();
+    const response = await withAuthProxy<UserApiResponseTypes<DeletedResponse>>({
+      url: API_USERS_DELETE,
       method: "POST",
       data: body,
     });

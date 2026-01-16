@@ -22,6 +22,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Activity, ActivityType, getActivityType, formatActivityTitle, formatActivityDescription } from "@/lib/types/activity";
 import { ActivitySkeleton } from "./components/activity-skeleton";
 import { ApiResponseTypes } from "@/lib/types/api";
+import { Can } from "@/components/Can";
+import { usePermission } from "@/hooks/usePermission";
 
 const iconMap: Record<ActivityType, React.ElementType> = {
   Invoice: FileText,
@@ -34,12 +36,17 @@ export default function ActivityPage() {
   const { toast } = useToast();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const canViewAll = usePermission("activities.view_all");
+  const canViewOwn = usePermission("activities.list");
 
   useEffect(() => {
     const fetchActivities = async () => {
+      if (!canViewAll && !canViewOwn) return;
+
       setIsLoading(true);
       try {
-        const response: ApiResponseTypes<Activity[]> = await getRequest({ url: '/api/activities' });
+        const endpoint = canViewAll ? '/api/activities' : '/api/activities/me';
+        const response: ApiResponseTypes<Activity[]> = await getRequest({ url: endpoint });
         // @ts-ignore
         setActivities(response.data.results || response.data);
       } catch (err: any) {
@@ -55,7 +62,7 @@ export default function ActivityPage() {
     };
 
     fetchActivities();
-  }, [toast]);
+  }, [toast, canViewAll, canViewOwn]);
 
   const formatRelativeTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -79,64 +86,69 @@ export default function ActivityPage() {
   }
 
   return (
-    <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
-      <div>
-        <h1 className="text-2xl font-bold font-headline tracking-tight">
-          Activity Feed
-        </h1>
-        <p className="text-muted-foreground">
-          A log of recent activities in your account.
-        </p>
-      </div>
+    <Can
+      permission={canViewAll ? "activities.view_all" : "activities.list"}
+      fallback={<div className="p-8 text-center text-muted-foreground">You do not have permission to view activity feed.</div>}
+    >
+      <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+        <div>
+          <h1 className="text-2xl font-bold font-headline tracking-tight">
+            Activity Feed
+          </h1>
+          <p className="text-muted-foreground">
+            A log of recent activities in your account.
+          </p>
+        </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="font-headline">Recent Activities</CardTitle>
-          <CardDescription>
-            Here is what has happened in your account recently.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <ActivitySkeleton />
-          ) : (
-            <div className="flow-root">
-              <ul role="list" className="-mb-8">
-                {activities.map((activity, activityIdx) => {
-                  const Icon = iconMap[getActivityType(activity.entity_type)];
-                  return (
-                    <li key={activity.id}>
-                      <div className="relative pb-8">
-                        {activityIdx !== activities.length - 1 ? (
-                          <span className="absolute left-5 top-5 -ml-px h-full w-0.5 bg-border" aria-hidden="true" />
-                        ) : null}
-                        <div className="relative flex items-start space-x-4">
-                          <div>
-                            <div className="relative px-1">
-                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted ring-8 ring-background">
-                                <Icon className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
+        <Card>
+          <CardHeader>
+            <CardTitle className="font-headline">Recent Activities</CardTitle>
+            <CardDescription>
+              Here is what has happened in your account recently.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <ActivitySkeleton />
+            ) : (
+              <div className="flow-root">
+                <ul role="list" className="-mb-8">
+                  {activities.map((activity, activityIdx) => {
+                    const Icon = iconMap[getActivityType(activity.entity_type)];
+                    return (
+                      <li key={activity.id}>
+                        <div className="relative pb-8">
+                          {activityIdx !== activities.length - 1 ? (
+                            <span className="absolute left-5 top-5 -ml-px h-full w-0.5 bg-border" aria-hidden="true" />
+                          ) : null}
+                          <div className="relative flex items-start space-x-4">
+                            <div>
+                              <div className="relative px-1">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted ring-8 ring-background">
+                                  <Icon className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
+                                </div>
                               </div>
                             </div>
-                          </div>
-                          <div className="min-w-0 flex-1 py-3">
-                            <div className="text-sm font-medium text-foreground">
-                              {formatActivityTitle(activity.action, activity.user_name)}
+                            <div className="min-w-0 flex-1 py-3">
+                              <div className="text-sm font-medium text-foreground">
+                                {formatActivityTitle(activity.action, activity.user_name)}
+                              </div>
+                              <p className="mt-0.5 text-sm text-muted-foreground">{formatActivityDescription(activity)}</p>
                             </div>
-                            <p className="mt-0.5 text-sm text-muted-foreground">{formatActivityDescription(activity)}</p>
-                          </div>
-                          <div className="flex-shrink-0 self-center">
-                            <Badge variant="outline">{formatRelativeTime(activity.created_at)}</Badge>
+                            <div className="flex-shrink-0 self-center">
+                              <Badge variant="outline">{formatRelativeTime(activity.created_at)}</Badge>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </main>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </main>
+    </Can>
   );
 }

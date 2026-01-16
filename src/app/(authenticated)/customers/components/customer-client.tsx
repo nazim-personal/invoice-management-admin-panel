@@ -419,218 +419,220 @@ export function CustomerClient() {
           </div>
         </div>
         <TabsContent value={activeTab}>
-          <Card className="mt-4">
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">
-                      <Checkbox
-                        checked={selectAllCheckedState}
-                        onCheckedChange={handleSelectAll}
-                        aria-label="Select all"
-                      />
-                    </TableHead>
-                    <TableHead>Customer</TableHead>
-                    <TableHead className="hidden md:table-cell">Phone</TableHead>
-                    <TableHead className="hidden sm:table-cell">Status</TableHead>
-                    <TableHead className="hidden sm:table-cell">Last Updated</TableHead>
-                    <TableHead>
-                      <span className="sr-only">Actions</span>
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    Array.from({ length: rowsPerPage }).map((_, i) => <CustomerSkeleton key={i} />)
-                  ) : customers.length === 0 ? (
+          <Can permission="customers.list" fallback={<div className="p-8 text-center text-muted-foreground">You do not have permission to view customers.</div>}>
+            <Card className="mt-4">
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={6} className="h-24 text-center">
-                        <EmptyState
-                          icon={<Users className="h-12 w-12" />}
-                          title="No customers found"
-                          description={activeTab === "Deleted" ? "No deleted customers found." : "Get started by adding your first customer."}
-                          action={activeTab === "Deleted" ? undefined : {
-                            label: "Create Customer",
-                            onClick: handleAddNew,
-                          }}
+                      <TableHead className="w-12">
+                        <Checkbox
+                          checked={selectAllCheckedState}
+                          onCheckedChange={handleSelectAll}
+                          aria-label="Select all"
                         />
-                      </TableCell>
+                      </TableHead>
+                      <TableHead>Customer</TableHead>
+                      <TableHead className="hidden md:table-cell">Phone</TableHead>
+                      <TableHead className="hidden sm:table-cell">Status</TableHead>
+                      <TableHead className="hidden sm:table-cell">Last Updated</TableHead>
+                      <TableHead>
+                        <span className="sr-only">Actions</span>
+                      </TableHead>
                     </TableRow>
-                  ) : (
-                    customers.map((customer) => (
-                      <TableRow
-                        key={customer.id}
-                        className="cursor-pointer"
-                        data-state={selectedCustomerIds.includes(customer.id) ? "selected" : ""}
-                      >
-                        <TableCell className="w-12" onClick={(e) => e.stopPropagation()}>
-                          <Checkbox
-                            checked={selectedCustomerIds.includes(customer.id)}
-                            onCheckedChange={(checked) => handleSelectOne(customer.id, !!checked)}
-                            aria-label="Select row"
+                  </TableHeader>
+                  <TableBody>
+                    {isLoading ? (
+                      Array.from({ length: rowsPerPage }).map((_, i) => <CustomerSkeleton key={i} />)
+                    ) : customers.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="h-24 text-center">
+                          <EmptyState
+                            icon={<Users className="h-12 w-12" />}
+                            title="No customers found"
+                            description={activeTab === "Deleted" ? "No deleted customers found." : "Get started by adding your first customer."}
+                            action={activeTab === "Deleted" ? undefined : {
+                              label: "Create Customer",
+                              onClick: handleAddNew,
+                            }}
                           />
                         </TableCell>
-                        <TableCell
-                          onClick={() => router.push(`/customers/${customer.id}`)}
+                      </TableRow>
+                    ) : (
+                      customers.map((customer) => (
+                        <TableRow
+                          key={customer.id}
+                          className="cursor-pointer"
+                          data-state={selectedCustomerIds.includes(customer.id) ? "selected" : ""}
                         >
-                          <div className="font-medium">{capitalizeWords(customer.name)}</div>
-                          <div className="text-sm text-muted-foreground">{customer.email}</div>
-                        </TableCell>
-                        <TableCell
-                          className="hidden md:table-cell"
-                          onClick={() => router.push(`/customers/${customer.id}`)}
-                        >
-                          {customer.phone}
-                        </TableCell>
-                        <TableCell
-                          className="hidden sm:table-cell"
-                          onClick={() => router.push(`/customers/${customer.id}`)}
-                        >
-                          <Badge
-                            variant={
-                              customer.status === "Paid"
-                                ? "default"
-                                : customer.status === "New"
-                                  ? "outline"
-                                  : customer.status === "Pending"
-                                    ? "secondary"
-                                    : "destructive"
-                            }
-                            className="capitalize"
+                          <TableCell className="w-12" onClick={(e) => e.stopPropagation()}>
+                            <Checkbox
+                              checked={selectedCustomerIds.includes(customer.id)}
+                              onCheckedChange={(checked) => handleSelectOne(customer.id, !!checked)}
+                              aria-label="Select row"
+                            />
+                          </TableCell>
+                          <TableCell
+                            onClick={() => router.push(`/customers/${customer.id}`)}
                           >
-                            {customer.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell
-                          className="hidden md:table-cell"
-                          onClick={() => router.push(`/customers/${customer.id}`)}
-                        >
-                          {formatDate(customer.updated_at || customer.created_at)}
-                        </TableCell>
-                        <TableCell onClick={(e) => e.stopPropagation()}>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button aria-haspopup="true" size="icon" variant="ghost">
-                                <MoreHorizontal className="h-4 w-4" />
-                                <span className="sr-only">Toggle menu</span>
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <Can permission="customers.view">
-                                <DropdownMenuItem
-                                  onSelect={() => router.push(`/customers/${customer.id}`)}
-                                >
-                                  <Eye className="mr-2 h-4 w-4" />
-                                  View Details
-                                </DropdownMenuItem>
-                              </Can>
-                              <Can permission="customers.update">
-                                <DropdownMenuItem onSelect={() => handleEdit(customer)}>
-                                  <Pencil className="mr-2 h-4 w-4" />
-                                  Edit Customer
-                                </DropdownMenuItem>
-                              </Can>
-
-                              <DropdownMenuSeparator />
-                              {activeTab === "Deleted" ? (
-                                <Can permission="customers.delete">
+                            <div className="font-medium">{capitalizeWords(customer.name)}</div>
+                            <div className="text-sm text-muted-foreground">{customer.email}</div>
+                          </TableCell>
+                          <TableCell
+                            className="hidden md:table-cell"
+                            onClick={() => router.push(`/customers/${customer.id}`)}
+                          >
+                            {customer.phone}
+                          </TableCell>
+                          <TableCell
+                            className="hidden sm:table-cell"
+                            onClick={() => router.push(`/customers/${customer.id}`)}
+                          >
+                            <Badge
+                              variant={
+                                customer.status === "Paid"
+                                  ? "default"
+                                  : customer.status === "New"
+                                    ? "outline"
+                                    : customer.status === "Pending"
+                                      ? "secondary"
+                                      : "destructive"
+                              }
+                              className="capitalize"
+                            >
+                              {customer.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell
+                            className="hidden md:table-cell"
+                            onClick={() => router.push(`/customers/${customer.id}`)}
+                          >
+                            {formatDate(customer.updated_at || customer.created_at)}
+                          </TableCell>
+                          <TableCell onClick={(e) => e.stopPropagation()}>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button aria-haspopup="true" size="icon" variant="ghost">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                  <span className="sr-only">Toggle menu</span>
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <Can permission="customers.view">
                                   <DropdownMenuItem
-                                    className="text-green-600"
-                                    onSelect={() => handleRestore(customer.id)}
+                                    onSelect={() => router.push(`/customers/${customer.id}`)}
                                   >
-                                    <RotateCcw className="mr-2 h-4 w-4" />
-                                    Restore Customer
+                                    <Eye className="mr-2 h-4 w-4" />
+                                    View Details
                                   </DropdownMenuItem>
                                 </Can>
-                              ) : (
-                                <Can permission="customers.delete">
-                                  <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                      <DropdownMenuItem
-                                        className="text-destructive"
-                                        onSelect={(e) => e.preventDefault()}
-                                      >
-                                        <Trash2 className="mr-2 h-4 w-4" />
-                                        Delete Customer
-                                      </DropdownMenuItem>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                      <AlertDialogHeader>
-                                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                          This action cannot be undone. This will permanently delete this customer and all associated invoices.
-                                        </AlertDialogDescription>
-                                      </AlertDialogHeader>
-                                      <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleDelete(customer.id)}>
-                                          Continue
-                                        </AlertDialogAction>
-                                      </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                  </AlertDialog>
+                                <Can permission="customers.update">
+                                  <DropdownMenuItem onSelect={() => handleEdit(customer)}>
+                                    <Pencil className="mr-2 h-4 w-4" />
+                                    Edit Customer
+                                  </DropdownMenuItem>
                                 </Can>
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-            <CardFooter>
-              <div className="flex items-center justify-between w-full">
-                <div className="text-xs text-muted-foreground">
-                  {selectedCustomerIds.length > 0
-                    ? `${selectedCustomerIds.length} of ${customers.length} customer(s) selected.`
-                    : `Showing ${startCustomer}-${endCustomer} of ${meta.total} customers`}
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">Rows per page</span>
-                    <Select value={String(rowsPerPage)} onValueChange={handleRowsPerPageChange}>
-                      <SelectTrigger className="h-8 w-[70px]">
-                        <SelectValue placeholder={String(rowsPerPage)} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="10">10</SelectItem>
-                        <SelectItem value="30">30</SelectItem>
-                        <SelectItem value="50">50</SelectItem>
-                        <SelectItem value="100">100</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+
+                                <DropdownMenuSeparator />
+                                {activeTab === "Deleted" ? (
+                                  <Can permission="customers.delete">
+                                    <DropdownMenuItem
+                                      className="text-green-600"
+                                      onSelect={() => handleRestore(customer.id)}
+                                    >
+                                      <RotateCcw className="mr-2 h-4 w-4" />
+                                      Restore Customer
+                                    </DropdownMenuItem>
+                                  </Can>
+                                ) : (
+                                  <Can permission="customers.delete">
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <DropdownMenuItem
+                                          className="text-destructive"
+                                          onSelect={(e) => e.preventDefault()}
+                                        >
+                                          <Trash2 className="mr-2 h-4 w-4" />
+                                          Delete Customer
+                                        </DropdownMenuItem>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                            This action cannot be undone. This will permanently delete this customer and all associated invoices.
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                          <AlertDialogAction onClick={() => handleDelete(customer.id)}>
+                                            Continue
+                                          </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+                                  </Can>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+              <CardFooter>
+                <div className="flex items-center justify-between w-full">
                   <div className="text-xs text-muted-foreground">
-                    Page {currentPage} of {totalPages}
+                    {selectedCustomerIds.length > 0
+                      ? `${selectedCustomerIds.length} of ${customers.length} customer(s) selected.`
+                      : `Showing ${startCustomer}-${endCustomer} of ${meta.total} customers`}
                   </div>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={handlePreviousPage}
-                      disabled={currentPage === 1}
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={handleNextPage}
-                      disabled={currentPage >= totalPages}
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">Rows per page</span>
+                      <Select value={String(rowsPerPage)} onValueChange={handleRowsPerPageChange}>
+                        <SelectTrigger className="h-8 w-[70px]">
+                          <SelectValue placeholder={String(rowsPerPage)} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="10">10</SelectItem>
+                          <SelectItem value="30">30</SelectItem>
+                          <SelectItem value="50">50</SelectItem>
+                          <SelectItem value="100">100</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Page {currentPage} of {totalPages}
+                    </div>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={handlePreviousPage}
+                        disabled={currentPage === 1}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={handleNextPage}
+                        disabled={currentPage >= totalPages}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </CardFooter>
-          </Card>
+              </CardFooter>
+            </Card>
+          </Can>
         </TabsContent>
       </Tabs>
 

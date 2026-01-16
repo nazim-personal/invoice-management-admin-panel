@@ -12,14 +12,14 @@ import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const navItems = [
-  { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { href: "/customers", icon: Users, label: "Customers" },
-  { href: "/products", icon: Package, label: "Products" },
-  { href: "/invoices", icon: FileText, label: "Invoices" },
-  { href: "/payments", icon: CircleDollarSign, label: "Payments" },
-  { href: "/reports", icon: BarChart, label: "Reports" },
-  { href: "/users", icon: Users, label: "Users" },
-  { href: "/activity", icon: History, label: "Activity" },
+  { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard", permission: "dashboard.view" },
+  { href: "/customers", icon: Users, label: "Customers", permission: "customers.list" },
+  { href: "/products", icon: Package, label: "Products", permission: "products.list" },
+  { href: "/invoices", icon: FileText, label: "Invoices", permission: "invoices.list" },
+  { href: "/payments", icon: CircleDollarSign, label: "Payments", permission: "payments.list" },
+  { href: "/reports", icon: BarChart, label: "Reports", permission: "reports.view" },
+  { href: "/users", icon: Users, label: "Users", permission: "users.list" },
+  { href: "/activity", icon: History, label: "Activity", permission: "activities.list" },
 ];
 
 function CustomSidebarTrigger() {
@@ -47,6 +47,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useAuthGuard(); // redirects automatically if user=null
   const pathname = usePathname();
 
+  // Filter nav items based on permissions
+  const filteredNavItems = React.useMemo(() => {
+    if (!user) return [];
+    if (user.role === 'admin') return navItems;
+    return navItems.filter(item => !item.permission || user.permissions?.includes(item.permission));
+  }, [user]);
+
   // show loading spinner while fetching user
   if (loading) {
     return (
@@ -70,7 +77,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         <SidebarContent>
           <SidebarMenu>
-            {navItems.filter(item => item.label !== "Users" || user?.role === 'admin').map((item) => (
+            {filteredNavItems.map((item) => (
               <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton
                   asChild

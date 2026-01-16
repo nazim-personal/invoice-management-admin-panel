@@ -1,6 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { useAuthContext } from "./AuthContext";
+import { getStorageItem, setStorageItem } from "@/lib/helpers/storage";
 
 type ThemeColor = {
     name: string;
@@ -125,6 +127,7 @@ type ThemeContextType = {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
+    const { user } = useAuthContext();
     const [currentTheme, setCurrentTheme] = useState("blue");
     const [customColor, setCustomColor] = useState("");
     const [mode, setModeState] = useState<ThemeMode>("system");
@@ -160,7 +163,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
     const setMode = (newMode: ThemeMode) => {
         setModeState(newMode);
-        localStorage.setItem("app-mode", newMode);
+        setStorageItem("app-mode", newMode, user?.id);
 
         const root = document.documentElement;
         const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
@@ -177,7 +180,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
     const setTheme = (themeName: string) => {
         setCurrentTheme(themeName);
-        localStorage.setItem("app-theme", themeName);
+        setStorageItem("app-theme", themeName, user?.id);
 
         const root = document.documentElement;
         const isDark = root.classList.contains("dark");
@@ -187,19 +190,19 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const setCustomTheme = (color: string) => {
         setCustomColor(color);
         setCurrentTheme("custom");
-        localStorage.setItem("app-theme", "custom");
-        localStorage.setItem("app-custom-color", color);
+        setStorageItem("app-theme", "custom", user?.id);
+        setStorageItem("app-custom-color", color, user?.id);
 
         const root = document.documentElement;
         const isDark = root.classList.contains("dark");
         applyThemeVars("custom", isDark, color);
     };
 
-    // Initialize theme and mode on mount
+    // Initialize theme and mode on mount or when user changes
     useEffect(() => {
-        const savedTheme = localStorage.getItem("app-theme") || "blue";
-        const savedMode = (localStorage.getItem("app-mode") as ThemeMode) || "system";
-        const savedCustomColor = localStorage.getItem("app-custom-color") || "";
+        const savedTheme = getStorageItem("app-theme", user?.id) || "blue";
+        const savedMode = (getStorageItem("app-mode", user?.id) as ThemeMode) || "system";
+        const savedCustomColor = getStorageItem("app-custom-color", user?.id) || "";
 
         setCurrentTheme(savedTheme);
         setModeState(savedMode);
@@ -220,7 +223,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         applyThemeVars(savedTheme, effectiveMode === "dark", savedCustomColor);
 
         setIsInitialized(true);
-    }, []);
+    }, [user?.id]);
 
     // Listen for system theme changes
     useEffect(() => {
