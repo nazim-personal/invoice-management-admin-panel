@@ -71,7 +71,7 @@ export default function LoginPage() {
           </div>
           <CardTitle className="text-2xl font-headline">Welcome to Invoice Pilot</CardTitle>
           <CardDescription>
-            Enter your email below to login to your account
+            Enter your credentials below to login to your account
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -82,7 +82,7 @@ export default function LoginPage() {
                 name="identifier"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>Username/Email</FormLabel>
                     <FormControl>
                       <Input
                         id="identifier"

@@ -28,24 +28,46 @@ function formatValidationDetails(details: unknown): string {
   return "Validation error occurred";
 }
 
+const ERROR_CODE_MAP: Record<string, string> = {
+  invalid_credentials: "Invalid Credentials",
+  validation_error: "Validation Error",
+  unauthorized: "Unauthorized",
+  forbidden: "Forbidden",
+  not_found: "Not Found",
+  server_error: "Server Error",
+};
+
 export const handleApiError = (error: any): ReturnTypes => {
+  // Extract data from Axios error if present, otherwise use the error object itself
+  const data = error?.response?.data || error;
+  const status = error?.response?.status;
+
   // Prioritize the message from the API response structure
   // Structure: { success: false, error: { code: "...", message: "...", details: ... } }
-  const apiError = error?.error;
-  const message = apiError?.message || error?.message || "Something went wrong";
+  const apiError = data?.error;
+  let message = apiError?.message || data?.message || error?.message || "Something went wrong";
   const details = apiError?.details;
 
+  // If message is generic and we have a status code, make it more specific
+  if ((message === "Something went wrong" || message === "Request failed") && status) {
+    message = `Request failed with status ${status}`;
+  }
+
   // If it's a validation error, we might want to show details
-  if (apiError?.code === "validation_error" && details) {
+  if ((apiError?.code === "validation_error" || data?.type === "validation_error") && details) {
     return {
       title: message,
       description: formatValidationDetails(details),
     };
   }
 
+  // Determine the title based on error code, type, or status
+  const errorCode = apiError?.code || data?.code || data?.type;
+  const title = ERROR_CODE_MAP[errorCode] || (status === 404 ? "Not Found" : "Error");
+
   // For all other errors, use the message from the API
   return {
-    title: "Error", // Or use 'message' as title if preferred, but 'Error' + description is standard
+    title: "Error",
     description: message,
   };
 };

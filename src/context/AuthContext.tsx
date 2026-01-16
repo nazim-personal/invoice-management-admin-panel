@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState, ReactNode, Dispatch, Se
 import { useRouter, usePathname } from 'next/navigation'
 import { useToast } from '@/hooks/use-toast'
 import { getRequest, postRequest } from '@/lib/helpers/axios/RequestService'
+import { handleApiError } from '@/lib/helpers/axios/errorHandler'
 
 type User = {
   id: string
@@ -52,7 +53,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     } catch (error: any) {
       setUser(null)
-      toast({ title: 'Error', description: error.message || 'Login failed', variant: 'destructive' })
+      const { title, description } = handleApiError(error)
+      toast({ title, description, variant: 'destructive' })
     } finally {
       setLoading(false)
     }

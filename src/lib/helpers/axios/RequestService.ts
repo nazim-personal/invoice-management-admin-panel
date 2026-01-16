@@ -56,8 +56,9 @@ axiosInstance.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
+    const isAuthRequest = originalRequest.url?.includes('/api/auth/sign-in') || originalRequest.url?.includes('/api/auth/refresh');
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthRequest) {
       // Check if error code is token_expired if the backend provides specific codes
       // For now, catch all 401s
 
