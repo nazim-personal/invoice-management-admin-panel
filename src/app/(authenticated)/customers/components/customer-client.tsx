@@ -71,6 +71,7 @@ import { handleApiError } from "@/lib/helpers/axios/errorHandler";
 import { useDebounce } from "@/hooks/useDebounce";
 import { CustomerSkeleton } from "./customer-skeleton";
 import { capitalizeWords, formatDate } from "@/lib/helpers/forms";
+import { usePermission } from "@/hooks/usePermission";
 import { Can } from "@/components/Can";
 import { EmptyState } from "@/components/ui/empty-state";
 
@@ -91,6 +92,8 @@ export function CustomerClient() {
     limit: 10,
     total: 0,
   });
+  const canCreateCustomer = usePermission("customers.create");
+  const canRestoreCustomer = usePermission("customers.restore");
 
   const debouncedFetch = useDebounce((query: string) => {
     getCustomers(query);
@@ -344,7 +347,7 @@ export function CustomerClient() {
             <TabsTrigger value="Pending">Pending</TabsTrigger>
             <TabsTrigger value="Paid">Paid</TabsTrigger>
             <TabsTrigger value="Overdue">Overdue</TabsTrigger>
-            <TabsTrigger value="Deleted">Deleted</TabsTrigger>
+            {canRestoreCustomer && <TabsTrigger value="Deleted">Deleted</TabsTrigger>}
           </TabsList>
           <div className="flex items-center gap-2">
             {selectedCustomerIds.length > 0 && (
@@ -451,10 +454,10 @@ export function CustomerClient() {
                             icon={<Users className="h-12 w-12" />}
                             title="No customers found"
                             description={activeTab === "Deleted" ? "No deleted customers found." : "Get started by adding your first customer."}
-                            action={activeTab === "Deleted" ? undefined : {
+                            action={activeTab === "Deleted" ? undefined : (canCreateCustomer ? {
                               label: "Create Customer",
                               onClick: handleAddNew,
-                            }}
+                            } : undefined)}
                           />
                         </TableCell>
                       </TableRow>

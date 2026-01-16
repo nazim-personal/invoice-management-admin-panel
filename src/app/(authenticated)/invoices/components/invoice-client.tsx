@@ -72,9 +72,10 @@ import { handleApiError } from "@/lib/helpers/axios/errorHandler";
 import { capitalizeWords, formatDate } from "@/lib/helpers/forms";
 import { InvoiceSkeleton } from "./invoice-skeleton";
 import { formatWithThousands, generateWhatsAppMessage } from "@/lib/helpers/miscellaneous";
-import { Can } from "@/components/Can";
+import { usePermission } from "@/hooks/usePermission";
 import { RotateCcw } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Can } from "@/components/Can";
 
 const WhatsAppIcon = () => (
   <svg
@@ -105,6 +106,8 @@ export function InvoiceClient() {
     limit: 10,
     total: 0,
   });
+  const canCreateInvoice = usePermission("invoices.create");
+  const canRestoreInvoice = usePermission("invoices.restore");
 
   const debouncedFetch = useDebounce((query: string) => {
     getInvoices(query);
@@ -433,7 +436,7 @@ export function InvoiceClient() {
               <SelectItem value="Partially Paid">Partially Paid</SelectItem>
               <SelectItem value="Pending">Pending</SelectItem>
               <SelectItem value="Overdue">Overdue</SelectItem>
-              <SelectItem value="Deleted">Deleted</SelectItem>
+              {canRestoreInvoice && <SelectItem value="Deleted">Deleted</SelectItem>}
             </SelectContent>
           </Select>
           {selectedInvoiceIds.length > 0 && (
@@ -522,10 +525,10 @@ export function InvoiceClient() {
                         icon={<FileText className="h-12 w-12" />}
                         title="No invoices found"
                         description="Create your first invoice to get started."
-                        action={{
+                        action={canCreateInvoice ? {
                           label: "Create Invoice",
                           onClick: () => router.push("/invoices/new"),
-                        }}
+                        } : undefined}
                       />
                     </TableCell>
                   </TableRow>

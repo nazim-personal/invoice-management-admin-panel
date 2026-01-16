@@ -54,10 +54,12 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useAuthContext } from "@/context/AuthContext";
 
 export function UserClient() {
     const router = useRouter();
     const { toast } = useToast();
+    const { user: currentUser } = useAuthContext();
     const [users, setUsers] = React.useState<UserDataTypes[]>([]);
     const [searchTerm, setSearchTerm] = React.useState("");
     const [currentPage, setCurrentPage] = React.useState(1);
@@ -242,6 +244,7 @@ export function UserClient() {
                                                                     <DropdownMenuItem
                                                                         className="text-destructive"
                                                                         onSelect={(e) => e.preventDefault()}
+                                                                        disabled={currentUser?.id === user.id}
                                                                     >
                                                                         <Trash2 className="mr-2 h-4 w-4" />
                                                                         Delete User

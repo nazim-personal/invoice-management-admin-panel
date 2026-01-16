@@ -68,6 +68,7 @@ import { ProductSkeleton } from "./product-skeleton";
 import { DeletedResponse } from "@/lib/types/customers";
 import { capitalizeWords, formatDate } from "@/lib/helpers/forms";
 import { formatWithThousands } from "@/lib/helpers/miscellaneous";
+import { usePermission } from "@/hooks/usePermission";
 import { Can } from "@/components/Can";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -89,6 +90,8 @@ export function ProductClient() {
     total: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
+  const canCreateProduct = usePermission("products.create");
+  const canRestoreProduct = usePermission("products.restore");
 
   const debouncedFetch = useDebounce((query: string) => {
     getProducts(query);
@@ -328,7 +331,7 @@ export function ProductClient() {
         <div className="flex items-center justify-between gap-4">
           <TabsList>
             <TabsTrigger value="">All</TabsTrigger>
-            <TabsTrigger value="Deleted">Deleted</TabsTrigger>
+            {canRestoreProduct && <TabsTrigger value="Deleted">Deleted</TabsTrigger>}
           </TabsList>
           <div className="flex items-center gap-2">
             {selectedProductIds.length > 0 && (
@@ -436,10 +439,10 @@ export function ProductClient() {
                             icon={<Package className="h-12 w-12" />}
                             title="No products found"
                             description={activeTab === "Deleted" ? "No deleted products found." : "Add products to your inventory to get started."}
-                            action={activeTab === "Deleted" ? undefined : {
+                            action={activeTab === "Deleted" ? undefined : (canCreateProduct ? {
                               label: "Create Product",
                               onClick: handleAddNew,
-                            }}
+                            } : undefined)}
                           />
                         </TableCell>
                       </TableRow>
